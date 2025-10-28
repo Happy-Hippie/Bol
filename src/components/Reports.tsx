@@ -5,7 +5,7 @@ import { supabase } from '../lib/supabase';
 import { Card } from './Card';
 import { Button } from './Button';
 import { Modal } from './Modal';
-import { ReportCreation } from './reports/ReportCreation';
+import { ReportWizard } from './reports/ReportWizard';
 
 interface Report {
   id: string;
@@ -20,8 +20,8 @@ export function Reports() {
   const { user } = useAuth();
   const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showCreation, setShowCreation] = useState(false);
-  const [selectedType, setSelectedType] = useState<string | null>(null);
+  const [showWizard, setShowWizard] = useState(false);
+  const [selectedType, setSelectedType] = useState<'annual' | 'funder' | 'project' | 'custom'>('annual');
 
   useEffect(() => {
     loadReports();
@@ -41,12 +41,13 @@ export function Reports() {
     setLoading(false);
   };
 
-  const handleCreateReport = () => {
-    setShowCreation(true);
+  const handleCreateReport = (type: 'annual' | 'funder' | 'project' | 'custom') => {
+    setSelectedType(type);
+    setShowWizard(true);
   };
 
-  const handleCloseCreation = () => {
-    setShowCreation(false);
+  const handleCloseWizard = () => {
+    setShowWizard(false);
     loadReports();
   };
 
@@ -117,7 +118,7 @@ export function Reports() {
               key={rt.type}
               borderColor={getTypeBorderColor(rt.type)}
               className="cursor-pointer hover:scale-105 transition-all duration-200"
-              onClick={handleCreateReport}
+              onClick={() => handleCreateReport(rt.type as 'annual' | 'funder' | 'project' | 'custom')}
             >
               <div className="text-center">
                 <div className="text-5xl mb-3">{rt.icon}</div>
@@ -173,8 +174,8 @@ export function Reports() {
         )}
       </div>
 
-      {showCreation && (
-        <ReportCreation onClose={handleCloseCreation} />
+      {showWizard && (
+        <ReportWizard onClose={handleCloseWizard} reportType={selectedType} />
       )}
     </div>
   );

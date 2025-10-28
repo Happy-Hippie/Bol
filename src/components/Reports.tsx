@@ -4,7 +4,6 @@ import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { Card } from './Card';
 import { Button } from './Button';
-import { Modal } from './Modal';
 import { ReportWizard } from './reports/ReportWizard';
 
 interface Report {

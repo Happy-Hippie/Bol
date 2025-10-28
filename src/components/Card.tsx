@@ -1,13 +1,13 @@
-import { ReactNode } from 'react';
+import { ReactNode, HTMLAttributes } from 'react';
 
-interface CardProps {
+interface CardProps extends HTMLAttributes<HTMLDivElement> {
   children: ReactNode;
   className?: string;
   borderColor?: 'pink' | 'blue' | 'orange' | 'purple' | 'none';
   gradient?: boolean;
 }
 
-export function Card({ children, className = '', borderColor = 'none', gradient = false }: CardProps) {
+export function Card({ children, className = '', borderColor = 'none', gradient = false, ...rest }: CardProps) {
   const borderColors = {
     pink: 'border-l-4 border-bol-pink',
     blue: 'border-l-4 border-bol-blue',
@@ -19,7 +19,7 @@ export function Card({ children, className = '', borderColor = 'none', gradient 
   const gradientClass = gradient ? 'bg-gradient-pink-orange text-white' : 'bg-white';
 
   return (
-    <div className={`rounded-xl shadow-md p-6 transition-all duration-200 hover:shadow-lg ${gradientClass} ${borderColors[borderColor]} ${className}`}>
+    <div className={`rounded-xl shadow-md p-6 transition-all duration-200 hover:shadow-lg ${gradientClass} ${borderColors[borderColor]} ${className}`} {...rest}>
       {children}
     </div>
   );

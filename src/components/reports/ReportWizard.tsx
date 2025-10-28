@@ -153,7 +153,7 @@ export function ReportWizard({ onClose, reportType = 'annual' }: ReportWizardPro
         <div className="bg-white border-b border-gray-200 px-8 py-4 flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-bol-purple">
-              Create {wizardData.reportType?.charAt(0).toUpperCase() + wizardData.reportType?.slice(1)} Report
+              Create {wizardData.reportType ? wizardData.reportType.charAt(0).toUpperCase() + wizardData.reportType.slice(1) : ''} Report
             </h1>
             {lastSaved && (
               <p className="text-sm text-gray-500 mt-1">

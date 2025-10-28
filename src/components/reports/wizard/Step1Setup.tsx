@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { FileText, Calendar, DollarSign, Globe } from 'lucide-react';
+import { DollarSign } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import { useAuth } from '../../../contexts/AuthContext';
 import { TemplateSelector } from './TemplateSelector';

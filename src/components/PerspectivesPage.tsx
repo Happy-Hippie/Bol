@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Compass, FileText, Target, Shield, Building2, DollarSign, Book, Folder, Download, Eye, Pencil, Trash2, Upload, X, Plus, AlertTriangle } from 'lucide-react';
+import { Compass, FileText, Target, Shield, Building2, DollarSign, Book, Folder, Download, Eye, Link as LinkIcon, Pencil, Trash2, Upload, X, Plus, AlertTriangle } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 
@@ -37,7 +37,7 @@ const categories: Category[] = [
   { id: 'other', name: 'Other Frameworks', icon: Folder, color: '#6B7280', helperText: 'other frameworks' },
 ];
 
-export function Perspectives() {
+export function PerspectivesPage() {
   const { user } = useAuth();
   const [perspectives, setPerspectives] = useState<Perspective[]>([]);
   const [projects, setProjects] = useState<any[]>([]);

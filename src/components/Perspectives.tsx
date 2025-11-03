@@ -1,16 +1,14 @@
 import { useState, useEffect } from 'react';
-import { Compass, Upload, Eye, Edit2, Link, Trash2, ShieldCheck, X } from 'lucide-react';
+import { Compass, FileText, Target, Shield, Building2, DollarSign, Book, Folder, Download, Eye, Pencil, Trash2, Upload, X, Plus, AlertTriangle } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
-import { Button } from './Button';
-import { Card } from './Card';
-import { Modal } from './Modal';
 
 interface Perspective {
   id: string;
+  org_id: string;
   title: string;
   category: string;
-  description: string;
+  description: string | null;
   tags: string[];
   file_name: string;
   file_type: string;
@@ -18,443 +16,854 @@ interface Perspective {
   file_size: number;
   linked_projects: string[];
   created_at: string;
+  updated_at: string;
 }
 
-interface Project {
+interface Category {
   id: string;
   name: string;
+  icon: any;
+  color: string;
+  helperText: string;
 }
+
+const categories: Category[] = [
+  { id: 'sdg', name: 'SDG Documents', icon: Target, color: '#2563A5', helperText: 'SDG alignment' },
+  { id: 'human-rights', name: 'Human Rights Frameworks', icon: Shield, color: '#D946A6', helperText: 'human rights' },
+  { id: 'protocols', name: 'Protocols & Guidelines', icon: FileText, color: '#4A1A5C', helperText: 'protocols and guidelines' },
+  { id: 'sector', name: 'Sector-Specific Documentation', icon: Building2, color: '#F59E42', helperText: 'sector-specific' },
+  { id: 'grant', name: 'Grant-Based Requirements', icon: DollarSign, color: '#2563A5', helperText: 'grant requirements' },
+  { id: 'organizational', name: 'Organisational Policies', icon: Book, color: '#4A1A5C', helperText: 'organizational policies' },
+  { id: 'other', name: 'Other Frameworks', icon: Folder, color: '#6B7280', helperText: 'other frameworks' },
+];
 
 export function Perspectives() {
   const { user } = useAuth();
   const [perspectives, setPerspectives] = useState<Perspective[]>([]);
-  const [projects, setProjects] = useState<Project[]>([]);
+  const [projects, setProjects] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedPerspective, setSelectedPerspective] = useState<Perspective | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState('sdg');
+  const [showUploadModal, setShowUploadModal] = useState(false);
   const [showDetailModal, setShowDetailModal] = useState(false);
-  const [editFormData, setEditFormData] = useState({
-    title: '',
-    category: '',
-    description: '',
-    tags: '',
-    linked_projects: [] as string[],
-  });
-
-  const categories = [
-    { id: 'human-rights', label: 'Human Rights Frameworks', color: 'purple' },
-    { id: 'sdg', label: 'Sustainable Development Goals', color: 'blue' },
-    { id: 'sector', label: 'Sector-Specific Guidelines', color: 'green' },
-    { id: 'organizational', label: 'Organizational Protocols', color: 'orange' },
-    { id: 'policy', label: 'Policies & Standards', color: 'pink' },
-    { id: 'other', label: 'Other Frameworks', color: 'gray' },
-  ];
+  const [selectedDoc, setSelectedDoc] = useState<Perspective | null>(null);
 
   useEffect(() => {
-    loadPerspectives();
-    loadProjects();
+    if (user) {
+      loadData();
+    }
   }, [user]);
 
-  const loadPerspectives = async () => {
-    if (!user) return;
-    const { data } = await supabase
-      .from('perspectives')
-      .select('*')
-      .eq('org_id', user.id)
-      .order('created_at', { ascending: false });
+  const loadData = async () => {
+    try {
+      const [perspectivesRes, projectsRes] = await Promise.all([
+        supabase
+          .from('perspectives')
+          .select('*')
+          .eq('org_id', user?.id)
+          .order('created_at', { ascending: false }),
+        supabase
+          .from('projects')
+          .select('*')
+          .eq('org_id', user?.id)
+      ]);
 
-    if (data) {
-      setPerspectives(data);
-    }
-    setLoading(false);
-  };
-
-  const loadProjects = async () => {
-    if (!user) return;
-    const { data } = await supabase
-      .from('projects')
-      .select('id, name')
-      .eq('org_id', user.id);
-
-    if (data) {
-      setProjects(data);
+      if (perspectivesRes.data) setPerspectives(perspectivesRes.data);
+      if (projectsRes.data) setProjects(projectsRes.data);
+    } catch (error) {
+      console.error('Error loading data:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !user) return;
+  const getDocsByCategory = (categoryId: string) => {
+    return perspectives.filter(doc => doc.category === categoryId);
+  };
 
-    const fakeUrl = `https://via.placeholder.com/400x300?text=${encodeURIComponent(file.name)}`;
-
-    const { error } = await supabase.from('perspectives').insert({
-      org_id: user.id,
-      title: file.name,
-      category: 'other',
-      description: '',
-      tags: [],
-      file_name: file.name,
-      file_type: file.type,
-      file_url: fakeUrl,
-      file_size: file.size,
-      linked_projects: [],
+  const formatDate = (date: string) => {
+    return new Date(date).toLocaleDateString('en-IN', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
     });
-
-    if (!error) {
-      loadPerspectives();
-    }
-  };
-
-  const handleOpenDetail = (perspective: Perspective) => {
-    setSelectedPerspective(perspective);
-    setEditFormData({
-      title: perspective.title,
-      category: perspective.category,
-      description: perspective.description || '',
-      tags: perspective.tags?.join(', ') || '',
-      linked_projects: perspective.linked_projects || [],
-    });
-    setShowDetailModal(true);
-  };
-
-  const handleSaveDetails = async () => {
-    if (!selectedPerspective) return;
-
-    const { error } = await supabase
-      .from('perspectives')
-      .update({
-        title: editFormData.title,
-        category: editFormData.category,
-        description: editFormData.description,
-        tags: editFormData.tags.split(',').map(t => t.trim()).filter(t => t),
-        linked_projects: editFormData.linked_projects,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', selectedPerspective.id);
-
-    if (!error) {
-      setShowDetailModal(false);
-      loadPerspectives();
-    }
-  };
-
-  const handleDelete = async (id: string) => {
-    if (!confirm('Delete this perspective document?')) return;
-
-    const { error } = await supabase
-      .from('perspectives')
-      .delete()
-      .eq('id', id);
-
-    if (!error) {
-      setPerspectives(perspectives.filter(p => p.id !== id));
-      if (selectedPerspective?.id === id) {
-        setShowDetailModal(false);
-      }
-    }
-  };
-
-  const getCategoryColor = (categoryId: string) => {
-    const cat = categories.find(c => c.id === categoryId);
-    return cat?.color || 'gray';
-  };
-
-  const getCategoryLabel = (categoryId: string) => {
-    const cat = categories.find(c => c.id === categoryId);
-    return cat?.label || 'Other Frameworks';
   };
 
   const formatFileSize = (bytes: number) => {
-    if (bytes < 1024) return bytes + ' B';
-    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
-    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+    return (bytes / (1024 * 1024)).toLocaleString('en-IN', {
+      minimumFractionDigits: 1,
+      maximumFractionDigits: 1
+    }) + ' MB';
   };
 
-  const getTagColor = (category: string) => {
-    const colors: Record<string, string> = {
-      'human-rights': 'bg-purple-100 text-purple-700',
-      'sdg': 'bg-blue-100 text-blue-700',
-      'sector': 'bg-green-100 text-green-700',
-      'organizational': 'bg-orange-100 text-orange-700',
-      'policy': 'bg-pink-100 text-pink-700',
-      'other': 'bg-gray-100 text-gray-700',
-    };
-    return colors[category] || colors.other;
+  const handleDelete = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this framework document?')) return;
+
+    try {
+      const { error } = await supabase
+        .from('perspectives')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+      setPerspectives(prev => prev.filter(doc => doc.id !== id));
+    } catch (error) {
+      console.error('Error deleting document:', error);
+    }
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-bol-purple mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading frameworks...</p>
+        </div>
+      </div>
+    );
+  }
+
+  const currentCategory = categories.find(c => c.id === selectedCategory) || categories[0];
+  const currentDocs = getDocsByCategory(selectedCategory);
 
   return (
-    <div>
-      <div className="bg-gradient-to-r from-bol-purple to-bol-blue rounded-2xl p-8 mb-8 text-white">
-        <div className="flex items-center gap-3 mb-2">
-          <Compass size={40} />
-          <h1 className="text-4xl font-bold">Perspectives & Frameworks</h1>
+    <div className="h-full overflow-hidden bg-gray-50 flex flex-col">
+      <div className="bg-gradient-to-r from-bol-blue to-bol-purple text-white p-6 flex items-center gap-4">
+        <div className="bg-white/20 p-3 rounded-xl backdrop-blur-sm">
+          <Compass className="text-white" size={32} />
         </div>
-        <p className="text-white/90 text-lg">
-          Manage guiding documents for your organization
-        </p>
-      </div>
-
-      <div className="bg-gradient-to-r from-blue-100 to-purple-100 rounded-xl p-6 mb-8">
-        <p className="text-gray-700 text-center leading-relaxed">
-          Upload frameworks, perspectives, or reference documents that guide your organization's work.
-          These documents help ensure that all content generated by BOL aligns with your organization's principles and frameworks.
-        </p>
-      </div>
-
-      <div className="mb-8">
-        <label className="block">
-          <input
-            type="file"
-            accept=".pdf,.docx,.txt"
-            onChange={handleFileUpload}
-            className="hidden"
-          />
-          <div className="border-2 border-dashed border-bol-purple/40 rounded-xl p-12 text-center cursor-pointer hover:border-bol-purple hover:bg-bol-purple/5 transition-all">
-            <div className="w-20 h-20 mx-auto mb-4 bg-gradient-to-br from-bol-purple to-bol-pink rounded-full flex items-center justify-center">
-              <Upload className="text-white" size={40} />
-            </div>
-            <h3 className="text-xl font-bold text-bol-purple mb-2">Upload Framework Documents</h3>
-            <p className="text-gray-600 mb-4">Drag and drop or click to browse</p>
-            <div className="flex gap-2 justify-center">
-              <span className="text-xs px-3 py-1 bg-bol-blue text-white rounded">PDF</span>
-              <span className="text-xs px-3 py-1 bg-bol-blue text-white rounded">DOCX</span>
-              <span className="text-xs px-3 py-1 bg-bol-blue text-white rounded">TXT</span>
-            </div>
-            <p className="text-xs text-gray-500 mt-3">Supports multiple file upload</p>
-          </div>
-        </label>
-      </div>
-
-      {loading ? (
-        <div className="text-center py-12 text-gray-500">Loading...</div>
-      ) : perspectives.length === 0 ? (
-        <div className="text-center py-12">
-          <Compass size={64} className="mx-auto mb-4 text-gray-300" />
-          <h3 className="text-xl font-bold text-gray-400 mb-2">No Framework Documents Yet</h3>
-          <p className="text-gray-500">Upload your first framework document using the area above</p>
-        </div>
-      ) : (
         <div>
-          <h2 className="text-2xl font-bold text-bol-purple mb-4">Uploaded Documents</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {perspectives.map((perspective) => (
-              <Card
-                key={perspective.id}
-                className="group hover:shadow-lg transition-all cursor-pointer"
-                onClick={() => handleOpenDetail(perspective)}
-              >
-                <div className="flex gap-3 mb-3">
-                  <div className={`w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                    getCategoryColor(perspective.category) === 'purple' ? 'bg-purple-100' :
-                    getCategoryColor(perspective.category) === 'blue' ? 'bg-blue-100' :
-                    getCategoryColor(perspective.category) === 'green' ? 'bg-green-100' :
-                    getCategoryColor(perspective.category) === 'orange' ? 'bg-orange-100' :
-                    getCategoryColor(perspective.category) === 'pink' ? 'bg-pink-100' :
-                    'bg-gray-100'
-                  }`}>
-                    <Compass className={`${
-                      getCategoryColor(perspective.category) === 'purple' ? 'text-purple-600' :
-                      getCategoryColor(perspective.category) === 'blue' ? 'text-blue-600' :
-                      getCategoryColor(perspective.category) === 'green' ? 'text-green-600' :
-                      getCategoryColor(perspective.category) === 'orange' ? 'text-orange-600' :
-                      getCategoryColor(perspective.category) === 'pink' ? 'text-pink-600' :
-                      'text-gray-600'
-                    }`} size={24} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-bold text-bol-purple mb-1 truncate" title={perspective.title}>
-                      {perspective.title}
-                    </h3>
-                    <span className={`text-xs px-2 py-1 rounded ${getTagColor(perspective.category)}`}>
-                      {getCategoryLabel(perspective.category)}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="text-xs text-gray-500 mb-3">
-                  <p>Uploaded: {new Date(perspective.created_at).toLocaleDateString('en-IN')}</p>
-                  <p>Size: {formatFileSize(perspective.file_size)}</p>
-                </div>
-
-                {perspective.linked_projects && perspective.linked_projects.length > 0 && (
-                  <div className="mb-3">
-                    <p className="text-xs text-gray-500 mb-1">
-                      Linked to {perspective.linked_projects.length} project(s)
-                    </p>
-                  </div>
-                )}
-
-                <div className="grid grid-cols-4 gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleOpenDetail(perspective);
-                    }}
-                    className="p-2 text-bol-blue hover:bg-bol-blue hover:text-white rounded transition-all"
-                    title="Preview"
-                  >
-                    <Eye size={16} />
-                  </button>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleOpenDetail(perspective);
-                    }}
-                    className="p-2 text-bol-orange hover:bg-bol-orange hover:text-white rounded transition-all"
-                    title="Edit details"
-                  >
-                    <Edit2 size={16} />
-                  </button>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleOpenDetail(perspective);
-                    }}
-                    className="p-2 text-bol-purple hover:bg-bol-purple hover:text-white rounded transition-all"
-                    title="Link to projects"
-                  >
-                    <Link size={16} />
-                  </button>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDelete(perspective.id);
-                    }}
-                    className="p-2 text-bol-pink hover:bg-bol-pink hover:text-white rounded transition-all"
-                    title="Delete"
-                  >
-                    <Trash2 size={16} />
-                  </button>
-                </div>
-              </Card>
-            ))}
-          </div>
-        </div>
-      )}
-
-      <div className="mt-8 bg-orange-50 border-l-4 border-bol-orange p-4 rounded-lg">
-        <div className="flex gap-3">
-          <ShieldCheck className="text-bol-orange flex-shrink-0" size={24} />
-          <p className="text-sm text-gray-700">
-            These documents help ensure that all content generated by BOL aligns with your organization's principles and frameworks.
+          <h1 className="text-2xl font-bold">Perspectives & Frameworks</h1>
+          <p className="text-white/90 text-sm">
+            Upload frameworks, perspectives, or reference documents that guide your organization's work. These documents help ensure that all content generated by BOL aligns with your organization's principles and frameworks.
           </p>
         </div>
       </div>
 
-      {showDetailModal && selectedPerspective && (
-        <Modal
-          isOpen={showDetailModal}
-          onClose={() => setShowDetailModal(false)}
-          title="Document Details"
-          size="lg"
+      <div className="flex-1 flex overflow-hidden">
+        <div className="w-64 bg-white border-r border-gray-200 overflow-y-auto">
+          <div className="p-4">
+            <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
+              Categories
+            </h3>
+            <div className="space-y-1">
+              {categories.map((category) => {
+                const CategoryIcon = category.icon;
+                const docCount = getDocsByCategory(category.id).length;
+                const isActive = selectedCategory === category.id;
+
+                return (
+                  <button
+                    key={category.id}
+                    onClick={() => setSelectedCategory(category.id)}
+                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 ${
+                      isActive
+                        ? 'bg-bol-purple text-white shadow-md'
+                        : 'text-gray-700 hover:bg-gray-100'
+                    }`}
+                  >
+                    <CategoryIcon size={20} />
+                    <span className="flex-1 text-left text-sm font-medium">
+                      {category.name}
+                    </span>
+                    <span
+                      className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
+                        isActive
+                          ? 'bg-white/20 text-white'
+                          : 'bg-gray-200 text-gray-600'
+                      }`}
+                    >
+                      {docCount}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+
+        <div className="flex-1 overflow-y-auto">
+          <div className="max-w-6xl mx-auto p-6 space-y-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl font-bold text-bol-purple">{currentCategory.name}</h2>
+                <div className="flex items-center gap-2 mt-2">
+                  <span className="px-3 py-1 bg-bol-orange text-white text-xs font-bold rounded-md">
+                    PDF
+                  </span>
+                  <span className="px-3 py-1 bg-bol-orange text-white text-xs font-bold rounded-md">
+                    DOCX
+                  </span>
+                  <span className="px-3 py-1 bg-bol-orange text-white text-xs font-bold rounded-md">
+                    TXT
+                  </span>
+                  <span className="text-sm text-gray-600 ml-2">
+                    Upload frameworks that guide your {currentCategory.helperText} work
+                  </span>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowUploadModal(true)}
+                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-bol-pink to-bol-orange text-white rounded-lg font-semibold hover:shadow-lg transition-all duration-200"
+              >
+                <Plus size={20} />
+                Upload to {currentCategory.name}
+              </button>
+            </div>
+
+            {currentDocs.length === 0 ? (
+              <div className="bg-white rounded-xl shadow-sm p-16 text-center">
+                <div className="bg-gradient-to-br from-bol-purple to-bol-pink p-8 rounded-full w-40 h-40 mx-auto mb-6 flex items-center justify-center">
+                  <FileText className="text-white" size={80} />
+                </div>
+                <h3 className="text-2xl font-bold text-bol-purple mb-2">
+                  No documents in this category yet
+                </h3>
+                <p className="text-gray-600 mb-6 max-w-md mx-auto">
+                  Upload your first framework document to start building your {currentCategory.helperText} library
+                </p>
+                <button
+                  onClick={() => setShowUploadModal(true)}
+                  className="px-8 py-3 bg-gradient-to-r from-bol-pink to-bol-orange text-white rounded-lg font-semibold hover:shadow-lg transition-all duration-200"
+                >
+                  Upload Your First Document
+                </button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {currentDocs.map(doc => (
+                  <DocumentCard
+                    key={doc.id}
+                    doc={doc}
+                    category={currentCategory}
+                    onEdit={(doc) => {
+                      setSelectedDoc(doc);
+                      setShowDetailModal(true);
+                    }}
+                    onDelete={handleDelete}
+                    formatDate={formatDate}
+                    formatFileSize={formatFileSize}
+                  />
+                ))}
+              </div>
+            )}
+
+            <div className="bg-bol-orange/10 border-l-4 border-bol-orange p-5 rounded-lg flex gap-4">
+              <AlertTriangle className="text-bol-orange flex-shrink-0" size={24} />
+              <div>
+                <p className="text-gray-700 font-medium mb-1">Usage Note</p>
+                <p className="text-gray-600 text-sm">
+                  These framework documents help the AI assistant and report generator align all content with your organization's guiding principles. Documents are searchable and linkable to specific projects.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {showUploadModal && (
+        <UploadModal
+          category={selectedCategory}
+          categoryName={currentCategory.name}
+          categories={categories}
+          projects={projects}
+          onClose={() => setShowUploadModal(false)}
+          onUploadComplete={loadData}
+          userId={user?.id || ''}
+        />
+      )}
+
+      {showDetailModal && selectedDoc && (
+        <DetailModal
+          doc={selectedDoc}
+          categories={categories}
+          projects={projects}
+          onClose={() => {
+            setShowDetailModal(false);
+            setSelectedDoc(null);
+          }}
+          onUpdate={loadData}
+          onDelete={(id) => {
+            handleDelete(id);
+            setShowDetailModal(false);
+            setSelectedDoc(null);
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+interface DocumentCardProps {
+  doc: Perspective;
+  category: Category;
+  onEdit: (doc: Perspective) => void;
+  onDelete: (id: string) => void;
+  formatDate: (date: string) => string;
+  formatFileSize: (bytes: number) => string;
+}
+
+function DocumentCard({
+  doc,
+  category,
+  onEdit,
+  onDelete,
+  formatDate,
+  formatFileSize
+}: DocumentCardProps) {
+  const CategoryIcon = category.icon;
+
+  return (
+    <div
+      className="bg-white rounded-xl border-l-4 p-4 transition-all duration-200 hover:-translate-y-1 hover:shadow-lg cursor-pointer"
+      style={{ borderLeftColor: category.color }}
+      onClick={() => onEdit(doc)}
+    >
+      <div className="flex items-start gap-3 mb-3">
+        <div style={{ color: category.color }}>
+          <CategoryIcon size={32} />
+        </div>
+        <div className="flex-1 min-w-0">
+          <h3 className="font-semibold text-bol-purple truncate mb-1">{doc.title}</h3>
+          <span
+            className="inline-block px-2 py-0.5 text-xs text-white rounded-full"
+            style={{ backgroundColor: category.color }}
+          >
+            {category.name}
+          </span>
+        </div>
+      </div>
+
+      {doc.description && (
+        <p className="text-sm text-gray-600 mb-3 line-clamp-2">{doc.description}</p>
+      )}
+
+      <div className="flex flex-wrap gap-2 text-xs text-gray-500 mb-3">
+        <span>{formatDate(doc.created_at)}</span>
+        <span>•</span>
+        <span>{formatFileSize(doc.file_size)}</span>
+        {doc.linked_projects && doc.linked_projects.length > 0 && (
+          <>
+            <span>•</span>
+            <span className="text-bol-blue font-medium">
+              Used in {doc.linked_projects.length} {doc.linked_projects.length === 1 ? 'project' : 'projects'}
+            </span>
+          </>
+        )}
+      </div>
+
+      {doc.tags && doc.tags.length > 0 && (
+        <div className="flex flex-wrap gap-1 mb-3">
+          {doc.tags.slice(0, 3).map((tag, idx) => (
+            <span
+              key={idx}
+              className="px-2 py-0.5 bg-gray-100 text-gray-600 text-xs rounded-full"
+            >
+              {tag}
+            </span>
+          ))}
+          {doc.tags.length > 3 && (
+            <span className="px-2 py-0.5 bg-gray-100 text-gray-600 text-xs rounded-full">
+              +{doc.tags.length - 3}
+            </span>
+          )}
+        </div>
+      )}
+
+      <div className="flex gap-2 pt-2 border-t border-gray-100" onClick={(e) => e.stopPropagation()}>
+        <button
+          onClick={() => onEdit(doc)}
+          className="flex-1 p-2 text-bol-blue hover:bg-bol-blue/10 rounded-lg transition-colors text-xs font-medium"
+          title="View Details"
         >
+          <Eye size={16} className="inline mr-1" />
+          View
+        </button>
+        <button
+          className="flex-1 p-2 text-bol-purple hover:bg-bol-purple/10 rounded-lg transition-colors text-xs font-medium"
+          title="Download"
+        >
+          <Download size={16} className="inline mr-1" />
+          Download
+        </button>
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete(doc.id);
+          }}
+          className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+          title="Delete"
+        >
+          <Trash2 size={16} />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+interface UploadModalProps {
+  category: string;
+  categoryName: string;
+  categories: Category[];
+  projects: any[];
+  onClose: () => void;
+  onUploadComplete: () => void;
+  userId: string;
+}
+
+function UploadModal({ category: initialCategory, categoryName, categories, projects, onClose, onUploadComplete, userId }: UploadModalProps) {
+  const [files, setFiles] = useState<File[]>([]);
+  const [uploading, setUploading] = useState(false);
+  const [fileDetails, setFileDetails] = useState<any[]>([]);
+  const [dragActive, setDragActive] = useState(false);
+
+  const handleDrag = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === "dragenter" || e.type === "dragover") {
+      setDragActive(true);
+    } else if (e.type === "dragleave") {
+      setDragActive(false);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      handleFiles(Array.from(e.dataTransfer.files));
+    }
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      handleFiles(Array.from(e.target.files));
+    }
+  };
+
+  const handleFiles = (newFiles: File[]) => {
+    setFiles(prev => [...prev, ...newFiles]);
+    setFileDetails(prev => [
+      ...prev,
+      ...newFiles.map(file => ({
+        file,
+        title: file.name.replace(/\.[^/.]+$/, ''),
+        description: '',
+        tags: [],
+        category: initialCategory,
+        linkedProjects: []
+      }))
+    ]);
+  };
+
+  const handleUpload = async () => {
+    if (fileDetails.length === 0) return;
+
+    setUploading(true);
+    try {
+      for (const detail of fileDetails) {
+        const { error } = await supabase.from('perspectives').insert({
+          org_id: userId,
+          title: detail.title,
+          category: detail.category,
+          description: detail.description || null,
+          tags: detail.tags,
+          file_name: detail.file.name,
+          file_type: detail.file.type,
+          file_url: URL.createObjectURL(detail.file),
+          file_size: detail.file.size,
+          linked_projects: detail.linkedProjects
+        });
+
+        if (error) throw error;
+      }
+
+      onUploadComplete();
+      onClose();
+    } catch (error) {
+      console.error('Error uploading:', error);
+      alert('Failed to upload documents');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+      <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="bg-gradient-to-r from-bol-purple to-bol-blue text-white p-6 flex items-center justify-between">
+          <h2 className="text-2xl font-bold">Upload to {categoryName}</h2>
+          <button onClick={onClose} className="text-white hover:bg-white/10 p-2 rounded-lg transition-colors">
+            <X size={24} />
+          </button>
+        </div>
+
+        <div className="p-6 space-y-6">
+          {files.length === 0 ? (
+            <div
+              onDragEnter={handleDrag}
+              onDragLeave={handleDrag}
+              onDragOver={handleDrag}
+              onDrop={handleDrop}
+              className={`border-2 border-dashed rounded-xl p-12 text-center cursor-pointer transition-colors ${
+                dragActive
+                  ? 'border-bol-purple bg-bol-purple/5'
+                  : 'border-bol-purple hover:bg-bol-purple/5'
+              }`}
+            >
+              <label className="cursor-pointer">
+                <Upload className="mx-auto mb-4 text-bol-purple" size={64} />
+                <p className="text-xl font-semibold text-bol-purple mb-2">Drag and drop files here</p>
+                <p className="text-gray-600 mb-4">or click to browse</p>
+                <div className="flex items-center justify-center gap-2">
+                  <span className="px-3 py-1 bg-bol-orange text-white text-xs font-bold rounded-md">
+                    PDF
+                  </span>
+                  <span className="px-3 py-1 bg-bol-orange text-white text-xs font-bold rounded-md">
+                    DOCX
+                  </span>
+                  <span className="px-3 py-1 bg-bol-orange text-white text-xs font-bold rounded-md">
+                    TXT
+                  </span>
+                </div>
+                <input
+                  type="file"
+                  multiple
+                  accept=".pdf,.doc,.docx,.txt"
+                  onChange={handleFileSelect}
+                  className="hidden"
+                />
+              </label>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {fileDetails.map((detail, index) => (
+                <div key={index} className="border border-gray-200 rounded-lg p-4 space-y-3">
+                  <div>
+                    <label className="block text-sm font-medium text-bol-purple mb-1">
+                      Framework Name
+                    </label>
+                    <input
+                      type="text"
+                      value={detail.title}
+                      onChange={(e) => {
+                        const newDetails = [...fileDetails];
+                        newDetails[index].title = e.target.value;
+                        setFileDetails(newDetails);
+                      }}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-bol-purple"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-bol-purple mb-1">
+                      Description
+                    </label>
+                    <textarea
+                      value={detail.description}
+                      onChange={(e) => {
+                        const newDetails = [...fileDetails];
+                        newDetails[index].description = e.target.value;
+                        setFileDetails(newDetails);
+                      }}
+                      rows={3}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-bol-purple"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-bol-purple mb-1">
+                      Tags (comma-separated)
+                    </label>
+                    <input
+                      type="text"
+                      onChange={(e) => {
+                        const newDetails = [...fileDetails];
+                        newDetails[index].tags = e.target.value.split(',').map(t => t.trim()).filter(Boolean);
+                        setFileDetails(newDetails);
+                      }}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-bol-purple"
+                      placeholder="e.g., SDG 4, Education, Policy"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-bol-purple mb-1">
+                      Category
+                    </label>
+                    <select
+                      value={detail.category}
+                      onChange={(e) => {
+                        const newDetails = [...fileDetails];
+                        newDetails[index].category = e.target.value;
+                        setFileDetails(newDetails);
+                      }}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-bol-purple"
+                    >
+                      {categories.map(cat => (
+                        <option key={cat.id} value={cat.id}>{cat.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              ))}
+              <div
+                onDragEnter={handleDrag}
+                onDragLeave={handleDrag}
+                onDragOver={handleDrag}
+                onDrop={handleDrop}
+                className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center cursor-pointer hover:bg-gray-50 transition-colors"
+              >
+                <label className="cursor-pointer">
+                  <Plus className="mx-auto mb-2 text-gray-400" size={32} />
+                  <p className="text-sm text-gray-600">Add Another File</p>
+                  <input
+                    type="file"
+                    multiple
+                    accept=".pdf,.doc,.docx,.txt"
+                    onChange={handleFileSelect}
+                    className="hidden"
+                  />
+                </label>
+              </div>
+            </div>
+          )}
+
+          <div className="flex gap-4">
+            <button
+              onClick={onClose}
+              className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleUpload}
+              disabled={files.length === 0 || uploading}
+              className="flex-1 px-6 py-3 bg-gradient-to-r from-bol-pink to-bol-orange text-white rounded-lg font-semibold hover:shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {uploading ? 'Uploading...' : `Upload ${files.length} Document${files.length !== 1 ? 's' : ''}`}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+interface DetailModalProps {
+  doc: Perspective;
+  categories: Category[];
+  projects: any[];
+  onClose: () => void;
+  onUpdate: () => void;
+  onDelete: (id: string) => void;
+}
+
+function DetailModal({ doc, categories, projects, onClose, onUpdate, onDelete }: DetailModalProps) {
+  const [title, setTitle] = useState(doc.title);
+  const [category, setCategory] = useState(doc.category);
+  const [description, setDescription] = useState(doc.description || '');
+  const [tags, setTags] = useState(doc.tags.join(', '));
+  const [linkedProjects, setLinkedProjects] = useState<string[]>(doc.linked_projects || []);
+  const [saving, setSaving] = useState(false);
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const { error } = await supabase
+        .from('perspectives')
+        .update({
+          title,
+          category,
+          description: description || null,
+          tags: tags.split(',').map(t => t.trim()).filter(Boolean),
+          linked_projects: linkedProjects
+        })
+        .eq('id', doc.id);
+
+      if (error) throw error;
+      onUpdate();
+      onClose();
+    } catch (error) {
+      console.error('Error updating document:', error);
+      alert('Failed to update document');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const formatDate = (date: string) => {
+    return new Date(date).toLocaleDateString('en-IN', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    });
+  };
+
+  const formatFileSize = (bytes: number) => {
+    return (bytes / (1024 * 1024)).toLocaleString('en-IN', {
+      minimumFractionDigits: 1,
+      maximumFractionDigits: 1
+    }) + ' MB';
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+      <div className="bg-white rounded-xl max-w-5xl w-full max-h-[90vh] overflow-hidden flex">
+        <div className="flex-1 p-6 bg-gray-50 flex items-center justify-center">
+          <div className="text-center">
+            <FileText size={120} className="text-bol-purple mx-auto mb-4" />
+            <p className="text-gray-600 mb-4">Preview not available</p>
+            <button className="px-4 py-2 bg-bol-blue text-white rounded-lg hover:bg-bol-blue/90 transition-colors">
+              <Download size={20} className="inline mr-2" />
+              Download File
+            </button>
+          </div>
+        </div>
+
+        <div className="w-96 bg-white p-6 overflow-y-auto">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-xl font-bold text-bol-purple">Framework Details</h2>
+            <button onClick={onClose} className="text-gray-500 hover:bg-gray-100 p-2 rounded-lg transition-colors">
+              <X size={20} />
+            </button>
+          </div>
+
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Document Name
+              <label className="block text-sm font-medium text-bol-purple mb-1">
+                Framework Name
               </label>
               <input
                 type="text"
-                value={editFormData.title}
-                onChange={(e) => setEditFormData({ ...editFormData, title: e.target.value })}
-                className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-bol-blue focus:outline-none"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-bol-purple"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-bol-purple mb-1">
                 Category
               </label>
               <select
-                value={editFormData.category}
-                onChange={(e) => setEditFormData({ ...editFormData, category: e.target.value })}
-                className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-bol-blue focus:outline-none bg-white"
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-bol-purple"
               >
-                {categories.map((cat) => (
-                  <option key={cat.id} value={cat.id}>
-                    {cat.label}
-                  </option>
+                {categories.map(cat => (
+                  <option key={cat.id} value={cat.id}>{cat.name}</option>
                 ))}
               </select>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-bol-purple mb-1">
                 Description
               </label>
               <textarea
-                value={editFormData.description}
-                onChange={(e) => setEditFormData({ ...editFormData, description: e.target.value })}
-                className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-bol-blue focus:outline-none"
-                rows={3}
-                placeholder="Describe this framework document..."
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                rows={4}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-bol-purple"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-bol-purple mb-1">
                 Tags
               </label>
               <input
                 type="text"
-                value={editFormData.tags}
-                onChange={(e) => setEditFormData({ ...editFormData, tags: e.target.value })}
-                className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-bol-blue focus:outline-none"
-                placeholder="Enter tags separated by commas"
+                value={tags}
+                onChange={(e) => setTags(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-bol-purple"
+                placeholder="Comma-separated"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Linked Projects
+              <label className="block text-sm font-medium text-gray-600 mb-1">
+                Upload Date
               </label>
-              <div className="space-y-2 max-h-40 overflow-y-auto border border-gray-200 rounded-lg p-3">
-                {projects.map((project) => (
-                  <label key={project.id} className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={editFormData.linked_projects.includes(project.id)}
-                      onChange={(e) => {
-                        if (e.target.checked) {
-                          setEditFormData({
-                            ...editFormData,
-                            linked_projects: [...editFormData.linked_projects, project.id],
-                          });
-                        } else {
-                          setEditFormData({
-                            ...editFormData,
-                            linked_projects: editFormData.linked_projects.filter(id => id !== project.id),
-                          });
-                        }
-                      }}
-                      className="w-4 h-4 text-bol-purple"
-                    />
-                    <span className="text-sm">{project.name}</span>
-                  </label>
-                ))}
-              </div>
+              <input
+                type="text"
+                value={formatDate(doc.created_at)}
+                disabled
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg bg-gray-50 text-gray-500"
+              />
             </div>
 
-            <div className="flex justify-between pt-4 border-t">
-              <Button
-                variant="outline"
-                onClick={() => handleDelete(selectedPerspective.id)}
-                className="text-red-500 border-red-500 hover:bg-red-500 hover:text-white"
-              >
-                <Trash2 size={16} className="mr-2" />
-                Delete
-              </Button>
-              <div className="flex gap-2">
-                <Button variant="outline" onClick={() => setShowDetailModal(false)}>
-                  Close
-                </Button>
-                <Button variant="gradient" onClick={handleSaveDetails}>
-                  Save Changes
-                </Button>
+            <div>
+              <label className="block text-sm font-medium text-gray-600 mb-1">
+                File Size
+              </label>
+              <input
+                type="text"
+                value={formatFileSize(doc.file_size)}
+                disabled
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg bg-gray-50 text-gray-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-bol-purple mb-2">
+                Associated Projects
+              </label>
+              <div className="space-y-2 max-h-40 overflow-y-auto border border-gray-200 rounded-lg p-3">
+                {projects.length === 0 ? (
+                  <p className="text-sm text-gray-500 text-center py-2">No projects available</p>
+                ) : (
+                  projects.map(project => (
+                    <label key={project.id} className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1 rounded">
+                      <input
+                        type="checkbox"
+                        checked={linkedProjects.includes(project.id)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setLinkedProjects([...linkedProjects, project.id]);
+                          } else {
+                            setLinkedProjects(linkedProjects.filter(id => id !== project.id));
+                          }
+                        }}
+                        className="w-4 h-4 text-bol-purple rounded focus:ring-2 focus:ring-bol-purple"
+                      />
+                      <span className="text-sm">{project.name}</span>
+                    </label>
+                  ))
+                )}
               </div>
+              <p className="text-sm text-gray-600 mt-2">
+                Linked to {linkedProjects.length} of {projects.length} projects
+              </p>
             </div>
           </div>
-        </Modal>
-      )}
+
+          <div className="mt-6 space-y-3">
+            <button
+              onClick={handleSave}
+              disabled={saving}
+              className="w-full px-6 py-3 bg-gradient-to-r from-bol-pink to-bol-orange text-white rounded-lg font-semibold hover:shadow-lg transition-all duration-200 disabled:opacity-50"
+            >
+              {saving ? 'Saving...' : 'Save Changes'}
+            </button>
+            <button
+              onClick={onClose}
+              className="w-full px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={() => {
+                if (confirm('Delete this framework document?')) {
+                  onDelete(doc.id);
+                }
+              }}
+              className="w-full px-6 py-3 border border-red-300 text-red-600 rounded-lg hover:bg-red-50 transition-colors font-medium"
+            >
+              Delete Framework
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

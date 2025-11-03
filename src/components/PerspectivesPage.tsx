@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Compass, FileText, Target, Shield, Building2, DollarSign, Book, Folder, Download, Eye, Link as LinkIcon, Pencil, Trash2, Upload, X, Plus, AlertTriangle } from 'lucide-react';
+import { Compass, Search, Grid, List, AlertTriangle, Target, Shield, FileText, Building2, DollarSign, Book, Folder, Download, Eye, Link as LinkIcon, Pencil, Trash2, Upload, X, Plus } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 
@@ -42,8 +42,13 @@ export function PerspectivesPage() {
   const [perspectives, setPerspectives] = useState<Perspective[]>([]);
   const [projects, setProjects] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedCategory, setSelectedCategory] = useState('sdg');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'name' | 'usage'>('newest');
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [selectedDocs, setSelectedDocs] = useState<string[]>([]);
   const [showUploadModal, setShowUploadModal] = useState(false);
+  const [uploadCategory, setUploadCategory] = useState('');
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [selectedDoc, setSelectedDoc] = useState<Perspective | null>(null);
 
@@ -74,6 +79,39 @@ export function PerspectivesPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const filterAndSortDocs = () => {
+    let filtered = perspectives;
+
+    if (searchQuery) {
+      filtered = filtered.filter(doc =>
+        doc.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        doc.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        doc.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()))
+      );
+    }
+
+    if (selectedCategory !== 'all') {
+      filtered = filtered.filter(doc => doc.category === selectedCategory);
+    }
+
+    filtered.sort((a, b) => {
+      switch (sortBy) {
+        case 'newest':
+          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        case 'oldest':
+          return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+        case 'name':
+          return a.title.localeCompare(b.title);
+        case 'usage':
+          return (b.linked_projects?.length || 0) - (a.linked_projects?.length || 0);
+        default:
+          return 0;
+      }
+    });
+
+    return filtered;
   };
 
   const getDocsByCategory = (categoryId: string) => {
@@ -111,6 +149,29 @@ export function PerspectivesPage() {
     }
   };
 
+  const toggleSelection = (id: string) => {
+    setSelectedDocs(prev =>
+      prev.includes(id) ? prev.filter(docId => docId !== id) : [...prev, id]
+    );
+  };
+
+  const handleBulkDelete = async () => {
+    if (!confirm(`Delete ${selectedDocs.length} documents?`)) return;
+
+    try {
+      const { error } = await supabase
+        .from('perspectives')
+        .delete()
+        .in('id', selectedDocs);
+
+      if (error) throw error;
+      setPerspectives(prev => prev.filter(doc => !selectedDocs.includes(doc.id)));
+      setSelectedDocs([]);
+    } catch (error) {
+      console.error('Error deleting documents:', error);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -122,148 +183,213 @@ export function PerspectivesPage() {
     );
   }
 
-  const currentCategory = categories.find(c => c.id === selectedCategory) || categories[0];
-  const currentDocs = getDocsByCategory(selectedCategory);
-
   return (
-    <div className="h-full overflow-hidden bg-gray-50 flex flex-col">
-      <div className="bg-gradient-to-r from-bol-blue to-bol-purple text-white p-6 flex items-center gap-4">
-        <div className="bg-white/20 p-3 rounded-xl backdrop-blur-sm">
-          <Compass className="text-white" size={32} />
+    <div className="h-full overflow-y-auto bg-gray-50">
+      <div className="max-w-7xl mx-auto p-6 space-y-6">
+        <div className="flex items-start gap-4">
+          <div className="bg-gradient-to-br from-bol-pink to-bol-orange p-3 rounded-xl">
+            <Compass className="text-white" size={32} />
+          </div>
+          <div className="flex-1">
+            <div className="text-sm text-gray-500 mb-1">Profile / Perspectives & Frameworks</div>
+            <h1 className="text-4xl font-bold text-bol-purple">Perspectives & Frameworks</h1>
+            <p className="text-gray-600 mt-1">Guiding principles and frameworks for your organization's work</p>
+          </div>
         </div>
-        <div>
-          <h1 className="text-2xl font-bold">Perspectives & Frameworks</h1>
-          <p className="text-white/90 text-sm">
+
+        <div className="bg-gradient-to-r from-bol-blue to-bol-purple text-white p-6 rounded-xl">
+          <p className="text-lg leading-relaxed">
             Upload frameworks, perspectives, or reference documents that guide your organization's work. These documents help ensure that all content generated by BOL aligns with your organization's principles and frameworks.
+          </p>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-4 bg-white p-4 rounded-xl shadow-sm">
+          <div className="relative flex-1 min-w-[300px]">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+            <input
+              type="text"
+              placeholder="Search frameworks..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-bol-purple"
+            />
+          </div>
+
+          <select
+            value={selectedCategory}
+            onChange={(e) => setSelectedCategory(e.target.value)}
+            className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-bol-purple"
+          >
+            <option value="all">All Categories</option>
+            {categories.map(cat => (
+              <option key={cat.id} value={cat.id}>{cat.name}</option>
+            ))}
+          </select>
+
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value as any)}
+            className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-bol-purple"
+          >
+            <option value="newest">Sort by: Newest</option>
+            <option value="oldest">Sort by: Oldest</option>
+            <option value="name">Sort by: Name A-Z</option>
+            <option value="usage">Sort by: Most Used</option>
+          </select>
+
+          <div className="flex gap-2">
+            <button
+              onClick={() => setViewMode('grid')}
+              className={`p-2 rounded-lg transition-colors ${
+                viewMode === 'grid'
+                  ? 'bg-bol-purple text-white'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              <Grid size={20} />
+            </button>
+            <button
+              onClick={() => setViewMode('list')}
+              className={`p-2 rounded-lg transition-colors ${
+                viewMode === 'list'
+                  ? 'bg-bol-purple text-white'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              <List size={20} />
+            </button>
+          </div>
+        </div>
+
+        <div className="space-y-8">
+          {categories.map(category => {
+            const docs = getDocsByCategory(category.id);
+            const CategoryIcon = category.icon;
+
+            return (
+              <div key={category.id} className="bg-white rounded-xl shadow-sm overflow-hidden">
+                <div className="p-6 border-b border-gray-200">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-3">
+                      <div className="bg-gradient-to-br from-bol-pink to-bol-orange p-2 rounded-lg">
+                        <CategoryIcon className="text-white" size={24} />
+                      </div>
+                      <h2 className="text-xl font-semibold text-bol-purple">{category.name}</h2>
+                      <span className="px-3 py-1 bg-bol-orange text-white text-sm font-bold rounded-full">
+                        {docs.length} documents
+                      </span>
+                    </div>
+                    <button
+                      onClick={() => {
+                        setUploadCategory(category.id);
+                        setShowUploadModal(true);
+                      }}
+                      className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-bol-pink to-bol-orange text-white rounded-lg hover:shadow-lg transition-all duration-200"
+                    >
+                      <Plus size={20} />
+                      Upload to {category.name}
+                    </button>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="px-3 py-1 bg-bol-orange/10 text-bol-orange text-sm font-medium rounded-full">
+                      PDF, DOCX, TXT
+                    </span>
+                    <span className="text-sm text-gray-600">
+                      Upload frameworks that guide your {category.helperText} work
+                    </span>
+                  </div>
+                </div>
+
+                {docs.length === 0 ? (
+                  <div className="p-12 text-center">
+                    <div className="bg-gradient-to-br from-bol-purple to-bol-pink p-6 rounded-full w-32 h-32 mx-auto mb-6 flex items-center justify-center">
+                      <CategoryIcon className="text-white" size={60} />
+                    </div>
+                    <h3 className="text-2xl font-semibold text-bol-purple mb-2">
+                      No {category.name} Yet
+                    </h3>
+                    <p className="text-gray-600 mb-6 max-w-md mx-auto">
+                      Upload frameworks and guidelines to ensure your content aligns with {category.helperText} principles
+                    </p>
+                    <button
+                      onClick={() => {
+                        setUploadCategory(category.id);
+                        setShowUploadModal(true);
+                      }}
+                      className="px-6 py-3 bg-gradient-to-r from-bol-pink to-bol-orange text-white rounded-lg font-semibold hover:shadow-lg transition-all duration-200"
+                    >
+                      Upload Your First Document
+                    </button>
+                  </div>
+                ) : (
+                  <div className={`p-6 ${
+                    viewMode === 'grid'
+                      ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'
+                      : 'space-y-4'
+                  }`}>
+                    {docs.map(doc => (
+                      <DocumentCard
+                        key={doc.id}
+                        doc={doc}
+                        category={category}
+                        viewMode={viewMode}
+                        isSelected={selectedDocs.includes(doc.id)}
+                        onToggleSelect={toggleSelection}
+                        onEdit={(doc) => {
+                          setSelectedDoc(doc);
+                          setShowDetailModal(true);
+                        }}
+                        onDelete={handleDelete}
+                        formatDate={formatDate}
+                        formatFileSize={formatFileSize}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        <div className="bg-bol-orange/10 border-l-4 border-bol-orange p-5 rounded-lg flex gap-4">
+          <AlertTriangle className="text-bol-orange flex-shrink-0" size={24} />
+          <p className="text-gray-700">
+            These framework documents help the AI assistant and report generator align all content with your organization's guiding principles. Documents are searchable and linkable to specific projects.
           </p>
         </div>
       </div>
 
-      <div className="flex-1 flex overflow-hidden">
-        <div className="w-64 bg-white border-r border-gray-200 overflow-y-auto">
-          <div className="p-4">
-            <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
-              Categories
-            </h3>
-            <div className="space-y-1">
-              {categories.map((category) => {
-                const CategoryIcon = category.icon;
-                const docCount = getDocsByCategory(category.id).length;
-                const isActive = selectedCategory === category.id;
-
-                return (
-                  <button
-                    key={category.id}
-                    onClick={() => setSelectedCategory(category.id)}
-                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 ${
-                      isActive
-                        ? 'bg-bol-purple text-white shadow-md'
-                        : 'text-gray-700 hover:bg-gray-100'
-                    }`}
-                  >
-                    <CategoryIcon size={20} />
-                    <span className="flex-1 text-left text-sm font-medium">
-                      {category.name}
-                    </span>
-                    <span
-                      className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
-                        isActive
-                          ? 'bg-white/20 text-white'
-                          : 'bg-gray-200 text-gray-600'
-                      }`}
-                    >
-                      {docCount}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-
-        <div className="flex-1 overflow-y-auto">
-          <div className="max-w-6xl mx-auto p-6 space-y-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-2xl font-bold text-bol-purple">{currentCategory.name}</h2>
-                <div className="flex items-center gap-2 mt-2">
-                  <span className="px-3 py-1 bg-bol-orange text-white text-xs font-bold rounded-md">
-                    PDF
-                  </span>
-                  <span className="px-3 py-1 bg-bol-orange text-white text-xs font-bold rounded-md">
-                    DOCX
-                  </span>
-                  <span className="px-3 py-1 bg-bol-orange text-white text-xs font-bold rounded-md">
-                    TXT
-                  </span>
-                  <span className="text-sm text-gray-600 ml-2">
-                    Upload frameworks that guide your {currentCategory.helperText} work
-                  </span>
-                </div>
-              </div>
+      {selectedDocs.length > 0 && (
+        <div className="fixed bottom-0 left-0 right-0 bg-bol-purple text-white p-4 shadow-lg">
+          <div className="max-w-7xl mx-auto flex items-center justify-between">
+            <span className="font-semibold">{selectedDocs.length} documents selected</span>
+            <div className="flex items-center gap-4">
+              <button className="px-4 py-2 bg-white text-bol-purple rounded-lg hover:bg-gray-100 transition-colors">
+                Link to Projects
+              </button>
+              <button className="px-4 py-2 bg-white text-bol-purple rounded-lg hover:bg-gray-100 transition-colors">
+                Download All
+              </button>
               <button
-                onClick={() => setShowUploadModal(true)}
-                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-bol-pink to-bol-orange text-white rounded-lg font-semibold hover:shadow-lg transition-all duration-200"
+                onClick={handleBulkDelete}
+                className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
               >
-                <Plus size={20} />
-                Upload to {currentCategory.name}
+                Delete Selected
+              </button>
+              <button
+                onClick={() => setSelectedDocs([])}
+                className="px-4 py-2 border border-white rounded-lg hover:bg-white/10 transition-colors"
+              >
+                Cancel
               </button>
             </div>
-
-            {currentDocs.length === 0 ? (
-              <div className="bg-white rounded-xl shadow-sm p-16 text-center">
-                <div className="bg-gradient-to-br from-bol-purple to-bol-pink p-8 rounded-full w-40 h-40 mx-auto mb-6 flex items-center justify-center">
-                  <FileText className="text-white" size={80} />
-                </div>
-                <h3 className="text-2xl font-bold text-bol-purple mb-2">
-                  No documents in this category yet
-                </h3>
-                <p className="text-gray-600 mb-6 max-w-md mx-auto">
-                  Upload your first framework document to start building your {currentCategory.helperText} library
-                </p>
-                <button
-                  onClick={() => setShowUploadModal(true)}
-                  className="px-8 py-3 bg-gradient-to-r from-bol-pink to-bol-orange text-white rounded-lg font-semibold hover:shadow-lg transition-all duration-200"
-                >
-                  Upload Your First Document
-                </button>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {currentDocs.map(doc => (
-                  <DocumentCard
-                    key={doc.id}
-                    doc={doc}
-                    category={currentCategory}
-                    onEdit={(doc) => {
-                      setSelectedDoc(doc);
-                      setShowDetailModal(true);
-                    }}
-                    onDelete={handleDelete}
-                    formatDate={formatDate}
-                    formatFileSize={formatFileSize}
-                  />
-                ))}
-              </div>
-            )}
-
-            <div className="bg-bol-orange/10 border-l-4 border-bol-orange p-5 rounded-lg flex gap-4">
-              <AlertTriangle className="text-bol-orange flex-shrink-0" size={24} />
-              <div>
-                <p className="text-gray-700 font-medium mb-1">Usage Note</p>
-                <p className="text-gray-600 text-sm">
-                  These framework documents help the AI assistant and report generator align all content with your organization's guiding principles. Documents are searchable and linkable to specific projects.
-                </p>
-              </div>
-            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {showUploadModal && (
         <UploadModal
-          category={selectedCategory}
-          categoryName={currentCategory.name}
+          category={uploadCategory}
           categories={categories}
           projects={projects}
           onClose={() => setShowUploadModal(false)}
@@ -296,6 +422,9 @@ export function PerspectivesPage() {
 interface DocumentCardProps {
   doc: Perspective;
   category: Category;
+  viewMode: 'grid' | 'list';
+  isSelected: boolean;
+  onToggleSelect: (id: string) => void;
   onEdit: (doc: Perspective) => void;
   onDelete: (id: string) => void;
   formatDate: (date: string) => string;
@@ -305,6 +434,9 @@ interface DocumentCardProps {
 function DocumentCard({
   doc,
   category,
+  viewMode,
+  isSelected,
+  onToggleSelect,
   onEdit,
   onDelete,
   formatDate,
@@ -314,87 +446,87 @@ function DocumentCard({
 
   return (
     <div
-      className="bg-white rounded-xl border-l-4 p-4 transition-all duration-200 hover:-translate-y-1 hover:shadow-lg cursor-pointer"
+      className={`bg-white rounded-xl border-l-4 transition-all duration-200 hover:-translate-y-1 hover:shadow-lg ${
+        isSelected ? 'ring-2 ring-bol-purple' : ''
+      }`}
       style={{ borderLeftColor: category.color }}
-      onClick={() => onEdit(doc)}
     >
-      <div className="flex items-start gap-3 mb-3">
-        <div style={{ color: category.color }}>
-          <CategoryIcon size={32} />
+      <div className="p-4">
+        <div className="flex items-start gap-3 mb-3">
+          <input
+            type="checkbox"
+            checked={isSelected}
+            onChange={() => onToggleSelect(doc.id)}
+            className="mt-1 w-5 h-5 text-bol-purple rounded focus:ring-2 focus:ring-bol-purple"
+          />
+          <div className="flex-1">
+            <div className="flex items-start gap-3 mb-2">
+              <div style={{ color: category.color }}>
+                <CategoryIcon size={32} />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-semibold text-bol-purple truncate">{doc.title}</h3>
+                <span
+                  className="inline-block px-2 py-0.5 text-xs text-white rounded-full mt-1"
+                  style={{ backgroundColor: category.color }}
+                >
+                  {category.name}
+                </span>
+              </div>
+            </div>
+            {doc.description && (
+              <p className="text-sm text-gray-600 mb-2 line-clamp-2">{doc.description}</p>
+            )}
+            <div className="flex flex-wrap gap-2 text-xs text-gray-500 mb-3">
+              <span>{formatDate(doc.created_at)}</span>
+              <span>•</span>
+              <span>{formatFileSize(doc.file_size)}</span>
+              {doc.linked_projects && doc.linked_projects.length > 0 && (
+                <>
+                  <span>•</span>
+                  <span className="text-bol-blue">
+                    Used in {doc.linked_projects.length} {doc.linked_projects.length === 1 ? 'project' : 'projects'}
+                  </span>
+                </>
+              )}
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => onEdit(doc)}
+                className="p-2 text-bol-blue hover:bg-bol-blue/10 rounded-lg transition-colors"
+                title="Preview"
+              >
+                <Eye size={16} />
+              </button>
+              <button
+                className="p-2 text-bol-purple hover:bg-bol-purple/10 rounded-lg transition-colors"
+                title="Download"
+              >
+                <Download size={16} />
+              </button>
+              <button
+                className="p-2 text-bol-orange hover:bg-bol-orange/10 rounded-lg transition-colors"
+                title="Manage Project Links"
+              >
+                <LinkIcon size={16} />
+              </button>
+              <button
+                onClick={() => onEdit(doc)}
+                className="p-2 text-bol-pink hover:bg-bol-pink/10 rounded-lg transition-colors"
+                title="Edit Details"
+              >
+                <Pencil size={16} />
+              </button>
+              <button
+                onClick={() => onDelete(doc.id)}
+                className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                title="Delete"
+              >
+                <Trash2 size={16} />
+              </button>
+            </div>
+          </div>
         </div>
-        <div className="flex-1 min-w-0">
-          <h3 className="font-semibold text-bol-purple truncate mb-1">{doc.title}</h3>
-          <span
-            className="inline-block px-2 py-0.5 text-xs text-white rounded-full"
-            style={{ backgroundColor: category.color }}
-          >
-            {category.name}
-          </span>
-        </div>
-      </div>
-
-      {doc.description && (
-        <p className="text-sm text-gray-600 mb-3 line-clamp-2">{doc.description}</p>
-      )}
-
-      <div className="flex flex-wrap gap-2 text-xs text-gray-500 mb-3">
-        <span>{formatDate(doc.created_at)}</span>
-        <span>•</span>
-        <span>{formatFileSize(doc.file_size)}</span>
-        {doc.linked_projects && doc.linked_projects.length > 0 && (
-          <>
-            <span>•</span>
-            <span className="text-bol-blue font-medium">
-              Used in {doc.linked_projects.length} {doc.linked_projects.length === 1 ? 'project' : 'projects'}
-            </span>
-          </>
-        )}
-      </div>
-
-      {doc.tags && doc.tags.length > 0 && (
-        <div className="flex flex-wrap gap-1 mb-3">
-          {doc.tags.slice(0, 3).map((tag, idx) => (
-            <span
-              key={idx}
-              className="px-2 py-0.5 bg-gray-100 text-gray-600 text-xs rounded-full"
-            >
-              {tag}
-            </span>
-          ))}
-          {doc.tags.length > 3 && (
-            <span className="px-2 py-0.5 bg-gray-100 text-gray-600 text-xs rounded-full">
-              +{doc.tags.length - 3}
-            </span>
-          )}
-        </div>
-      )}
-
-      <div className="flex gap-2 pt-2 border-t border-gray-100" onClick={(e) => e.stopPropagation()}>
-        <button
-          onClick={() => onEdit(doc)}
-          className="flex-1 p-2 text-bol-blue hover:bg-bol-blue/10 rounded-lg transition-colors text-xs font-medium"
-          title="View Details"
-        >
-          <Eye size={16} className="inline mr-1" />
-          View
-        </button>
-        <button
-          className="flex-1 p-2 text-bol-purple hover:bg-bol-purple/10 rounded-lg transition-colors text-xs font-medium"
-          title="Download"
-        >
-          <Download size={16} className="inline mr-1" />
-          Download
-        </button>
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onDelete(doc.id);
-          }}
-          className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-          title="Delete"
-        >
-          <Trash2 size={16} />
-        </button>
       </div>
     </div>
   );
@@ -402,7 +534,6 @@ function DocumentCard({
 
 interface UploadModalProps {
   category: string;
-  categoryName: string;
   categories: Category[];
   projects: any[];
   onClose: () => void;
@@ -410,51 +541,27 @@ interface UploadModalProps {
   userId: string;
 }
 
-function UploadModal({ category: initialCategory, categoryName, categories, projects, onClose, onUploadComplete, userId }: UploadModalProps) {
+function UploadModal({ category: initialCategory, categories, projects, onClose, onUploadComplete, userId }: UploadModalProps) {
   const [files, setFiles] = useState<File[]>([]);
   const [uploading, setUploading] = useState(false);
   const [fileDetails, setFileDetails] = useState<any[]>([]);
-  const [dragActive, setDragActive] = useState(false);
-
-  const handleDrag = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (e.type === "dragenter" || e.type === "dragover") {
-      setDragActive(true);
-    } else if (e.type === "dragleave") {
-      setDragActive(false);
-    }
-  };
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragActive(false);
-
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      handleFiles(Array.from(e.dataTransfer.files));
-    }
-  };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
-      handleFiles(Array.from(e.target.files));
+      const newFiles = Array.from(e.target.files);
+      setFiles(prev => [...prev, ...newFiles]);
+      setFileDetails(prev => [
+        ...prev,
+        ...newFiles.map(file => ({
+          file,
+          title: file.name.replace(/\.[^/.]+$/, ''),
+          description: '',
+          tags: [],
+          category: initialCategory,
+          linkedProjects: []
+        }))
+      ]);
     }
-  };
-
-  const handleFiles = (newFiles: File[]) => {
-    setFiles(prev => [...prev, ...newFiles]);
-    setFileDetails(prev => [
-      ...prev,
-      ...newFiles.map(file => ({
-        file,
-        title: file.name.replace(/\.[^/.]+$/, ''),
-        description: '',
-        tags: [],
-        category: initialCategory,
-        linkedProjects: []
-      }))
-    ]);
   };
 
   const handleUpload = async () => {
@@ -489,53 +596,35 @@ function UploadModal({ category: initialCategory, categoryName, categories, proj
     }
   };
 
+  const categoryName = categories.find(c => c.id === initialCategory)?.name || 'Category';
+
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         <div className="bg-gradient-to-r from-bol-purple to-bol-blue text-white p-6 flex items-center justify-between">
           <h2 className="text-2xl font-bold">Upload to {categoryName}</h2>
-          <button onClick={onClose} className="text-white hover:bg-white/10 p-2 rounded-lg transition-colors">
+          <button onClick={onClose} className="text-white hover:bg-white/10 p-2 rounded-lg">
             <X size={24} />
           </button>
         </div>
 
         <div className="p-6 space-y-6">
           {files.length === 0 ? (
-            <div
-              onDragEnter={handleDrag}
-              onDragLeave={handleDrag}
-              onDragOver={handleDrag}
-              onDrop={handleDrop}
-              className={`border-2 border-dashed rounded-xl p-12 text-center cursor-pointer transition-colors ${
-                dragActive
-                  ? 'border-bol-purple bg-bol-purple/5'
-                  : 'border-bol-purple hover:bg-bol-purple/5'
-              }`}
-            >
-              <label className="cursor-pointer">
-                <Upload className="mx-auto mb-4 text-bol-purple" size={64} />
-                <p className="text-xl font-semibold text-bol-purple mb-2">Drag and drop files here</p>
-                <p className="text-gray-600 mb-4">or click to browse</p>
-                <div className="flex items-center justify-center gap-2">
-                  <span className="px-3 py-1 bg-bol-orange text-white text-xs font-bold rounded-md">
-                    PDF
-                  </span>
-                  <span className="px-3 py-1 bg-bol-orange text-white text-xs font-bold rounded-md">
-                    DOCX
-                  </span>
-                  <span className="px-3 py-1 bg-bol-orange text-white text-xs font-bold rounded-md">
-                    TXT
-                  </span>
-                </div>
-                <input
-                  type="file"
-                  multiple
-                  accept=".pdf,.doc,.docx,.txt"
-                  onChange={handleFileSelect}
-                  className="hidden"
-                />
-              </label>
-            </div>
+            <label className="block border-2 border-dashed border-bol-purple rounded-xl p-12 text-center cursor-pointer hover:bg-bol-purple/5 transition-colors">
+              <Upload className="mx-auto mb-4 text-bol-purple" size={64} />
+              <p className="text-xl font-semibold text-bol-purple mb-2">Drag and drop files here</p>
+              <p className="text-gray-600 mb-4">or click to browse</p>
+              <span className="inline-block px-4 py-2 bg-bol-orange/10 text-bol-orange text-sm font-medium rounded-full">
+                PDF, DOCX, TXT
+              </span>
+              <input
+                type="file"
+                multiple
+                accept=".pdf,.doc,.docx,.txt"
+                onChange={handleFileSelect}
+                className="hidden"
+              />
+            </label>
           ) : (
             <div className="space-y-4">
               {fileDetails.map((detail, index) => (
@@ -605,32 +694,24 @@ function UploadModal({ category: initialCategory, categoryName, categories, proj
                   </div>
                 </div>
               ))}
-              <div
-                onDragEnter={handleDrag}
-                onDragLeave={handleDrag}
-                onDragOver={handleDrag}
-                onDrop={handleDrop}
-                className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center cursor-pointer hover:bg-gray-50 transition-colors"
-              >
-                <label className="cursor-pointer">
-                  <Plus className="mx-auto mb-2 text-gray-400" size={32} />
-                  <p className="text-sm text-gray-600">Add Another File</p>
-                  <input
-                    type="file"
-                    multiple
-                    accept=".pdf,.doc,.docx,.txt"
-                    onChange={handleFileSelect}
-                    className="hidden"
-                  />
-                </label>
-              </div>
+              <label className="block border-2 border-dashed border-gray-300 rounded-lg p-6 text-center cursor-pointer hover:bg-gray-50 transition-colors">
+                <Plus className="mx-auto mb-2 text-gray-400" size={32} />
+                <p className="text-sm text-gray-600">Add Another File</p>
+                <input
+                  type="file"
+                  multiple
+                  accept=".pdf,.doc,.docx,.txt"
+                  onChange={handleFileSelect}
+                  className="hidden"
+                />
+              </label>
             </div>
           )}
 
           <div className="flex gap-4">
             <button
               onClick={onClose}
-              className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+              className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
             >
               Cancel
             </button>
@@ -712,7 +793,7 @@ function DetailModal({ doc, categories, projects, onClose, onUpdate, onDelete }:
           <div className="text-center">
             <FileText size={120} className="text-bol-purple mx-auto mb-4" />
             <p className="text-gray-600 mb-4">Preview not available</p>
-            <button className="px-4 py-2 bg-bol-blue text-white rounded-lg hover:bg-bol-blue/90 transition-colors">
+            <button className="px-4 py-2 bg-bol-blue text-white rounded-lg hover:bg-bol-blue/90">
               <Download size={20} className="inline mr-2" />
               Download File
             </button>
@@ -722,7 +803,7 @@ function DetailModal({ doc, categories, projects, onClose, onUpdate, onDelete }:
         <div className="w-96 bg-white p-6 overflow-y-auto">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-xl font-bold text-bol-purple">Framework Details</h2>
-            <button onClick={onClose} className="text-gray-500 hover:bg-gray-100 p-2 rounded-lg transition-colors">
+            <button onClick={onClose} className="text-gray-500 hover:bg-gray-100 p-2 rounded-lg">
               <X size={20} />
             </button>
           </div>
@@ -809,27 +890,23 @@ function DetailModal({ doc, categories, projects, onClose, onUpdate, onDelete }:
                 Associated Projects
               </label>
               <div className="space-y-2 max-h-40 overflow-y-auto border border-gray-200 rounded-lg p-3">
-                {projects.length === 0 ? (
-                  <p className="text-sm text-gray-500 text-center py-2">No projects available</p>
-                ) : (
-                  projects.map(project => (
-                    <label key={project.id} className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1 rounded">
-                      <input
-                        type="checkbox"
-                        checked={linkedProjects.includes(project.id)}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setLinkedProjects([...linkedProjects, project.id]);
-                          } else {
-                            setLinkedProjects(linkedProjects.filter(id => id !== project.id));
-                          }
-                        }}
-                        className="w-4 h-4 text-bol-purple rounded focus:ring-2 focus:ring-bol-purple"
-                      />
-                      <span className="text-sm">{project.name}</span>
-                    </label>
-                  ))
-                )}
+                {projects.map(project => (
+                  <label key={project.id} className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={linkedProjects.includes(project.id)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setLinkedProjects([...linkedProjects, project.id]);
+                        } else {
+                          setLinkedProjects(linkedProjects.filter(id => id !== project.id));
+                        }
+                      }}
+                      className="w-4 h-4 text-bol-purple rounded focus:ring-2 focus:ring-bol-purple"
+                    />
+                    <span className="text-sm">{project.name}</span>
+                  </label>
+                ))}
               </div>
               <p className="text-sm text-gray-600 mt-2">
                 Linked to {linkedProjects.length} of {projects.length} projects
@@ -847,7 +924,7 @@ function DetailModal({ doc, categories, projects, onClose, onUpdate, onDelete }:
             </button>
             <button
               onClick={onClose}
-              className="w-full px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+              className="w-full px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
             >
               Cancel
             </button>
@@ -857,7 +934,7 @@ function DetailModal({ doc, categories, projects, onClose, onUpdate, onDelete }:
                   onDelete(doc.id);
                 }
               }}
-              className="w-full px-6 py-3 border border-red-300 text-red-600 rounded-lg hover:bg-red-50 transition-colors font-medium"
+              className="w-full px-6 py-3 border border-red-300 text-red-600 rounded-lg hover:bg-red-50 transition-colors"
             >
               Delete Framework
             </button>

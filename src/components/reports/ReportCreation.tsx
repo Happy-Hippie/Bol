@@ -4,6 +4,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { Button } from '../Button';
 import { Card } from '../Card';
+import { ContentInput } from './ContentInput';
 
 interface ReportCreationProps {
   onClose: () => void;
@@ -175,59 +176,12 @@ export function ReportCreation({ onClose }: ReportCreationProps) {
           )}
 
           {step === 2 && (
-            <div className="space-y-6">
-              <div>
-                <h3 className="text-2xl font-bold text-bol-purple mb-2">Content Input</h3>
-                <p className="text-gray-600 mb-6">Add content using text or voice input</p>
-              </div>
-
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <label className="block text-bol-purple font-medium">Report Content</label>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={handleVoiceInput}
-                      className={`p-3 rounded-full transition-all duration-200 ${
-                        isRecording
-                          ? 'bg-gradient-orange-pink animate-pulse-slow'
-                          : 'bg-gradient-pink-orange hover:opacity-90'
-                      }`}
-                    >
-                      <Mic size={20} className="text-white" />
-                    </button>
-                    <button
-                      onClick={handleAIExpand}
-                      disabled={isProcessing || !formData.content}
-                      className="flex items-center gap-2 px-4 py-2 bg-bol-blue text-white rounded-lg hover:bg-bol-blue/90 transition-all disabled:opacity-50"
-                    >
-                      <Sparkles size={16} />
-                      {isProcessing ? 'Expanding...' : 'AI Expand'}
-                    </button>
-                  </div>
-                </div>
-
-                <textarea
-                  value={formData.content}
-                  onChange={(e) => setFormData({ ...formData, content: e.target.value })}
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-bol-purple focus:outline-none"
-                  rows={12}
-                  placeholder="Start typing or use voice input to add content..."
-                />
-                <div className="flex justify-between mt-2">
-                  <span className="text-sm text-gray-400">{formData.content.length} characters</span>
-                  {isRecording && (
-                    <span className="text-sm text-bol-orange font-medium flex items-center gap-2">
-                      <span className="w-2 h-2 bg-bol-orange rounded-full animate-pulse" />
-                      Recording...
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              <Button variant="outline" className="w-full">
-                Add Custom Segment
-              </Button>
-            </div>
+            <ContentInput
+              onNext={handleNext}
+              onBack={handleBack}
+              reportData={formData}
+              onUpdate={(data) => setFormData({ ...formData, ...data })}
+            />
           )}
 
           {step === 3 && (
@@ -331,36 +285,38 @@ export function ReportCreation({ onClose }: ReportCreationProps) {
           )}
         </div>
 
-        <div className="bg-gray-50 px-6 py-4 flex justify-between items-center border-t border-gray-200">
-          <Button
-            variant="outline"
-            onClick={handleBack}
-            disabled={step === 1}
-          >
-            <ArrowLeft size={20} className="mr-2" />
-            Back
-          </Button>
+        {step !== 2 && (
+          <div className="bg-gray-50 px-6 py-4 flex justify-between items-center border-t border-gray-200">
+            <Button
+              variant="outline"
+              onClick={handleBack}
+              disabled={step === 1}
+            >
+              <ArrowLeft size={20} className="mr-2" />
+              Back
+            </Button>
 
-          {step < 4 ? (
-            <Button
-              variant="gradient"
-              onClick={handleNext}
-              disabled={step === 1 && (!formData.type || !formData.title)}
-            >
-              Next
-              <ArrowRight size={20} className="ml-2" />
-            </Button>
-          ) : (
-            <Button
-              variant="gradient"
-              onClick={handleGenerate}
-              disabled={isProcessing}
-              className="min-w-[200px]"
-            >
-              {isProcessing ? 'Generating...' : 'Generate Final Report'}
-            </Button>
-          )}
-        </div>
+            {step < 4 ? (
+              <Button
+                variant="gradient"
+                onClick={handleNext}
+                disabled={step === 1 && (!formData.type || !formData.title)}
+              >
+                Next
+                <ArrowRight size={20} className="ml-2" />
+              </Button>
+            ) : (
+              <Button
+                variant="gradient"
+                onClick={handleGenerate}
+                disabled={isProcessing}
+                className="min-w-[200px]"
+              >
+                {isProcessing ? 'Generating...' : 'Generate Final Report'}
+              </Button>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

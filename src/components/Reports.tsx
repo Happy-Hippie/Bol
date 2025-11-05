@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { FileText, Plus } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { Card } from './Card';
@@ -18,6 +19,7 @@ interface Report {
 
 export function Reports() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreation, setShowCreation] = useState(false);
@@ -41,8 +43,12 @@ export function Reports() {
     setLoading(false);
   };
 
-  const handleCreateReport = () => {
-    setShowCreation(true);
+  const handleCreateReport = (type: string) => {
+    if (type === 'annual') {
+      navigate('/reports/annual/setup');
+    } else {
+      setShowCreation(true);
+    }
   };
 
   const handleCloseCreation = () => {
@@ -117,7 +123,7 @@ export function Reports() {
               key={rt.type}
               borderColor={getTypeBorderColor(rt.type)}
               className="cursor-pointer hover:scale-105 transition-all duration-200"
-              onClick={handleCreateReport}
+              onClick={() => handleCreateReport(rt.type)}
             >
               <div className="text-center">
                 <div className="text-5xl mb-3">{rt.icon}</div>

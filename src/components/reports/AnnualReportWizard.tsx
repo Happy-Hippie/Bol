@@ -117,10 +117,10 @@ export function AnnualReportWizard({ onClose }: WizardProps) {
   };
 
   return (
-    <div className="min-h-screen bg-[#F5F7F5]">
+    <div className="min-h-screen bg-[#FDF8FC]">
       <div className="sticky top-0 bg-white shadow-sm z-10 px-8 py-4 flex items-center justify-between border-b border-gray-200">
         <div>
-          <h2 className="text-xl font-bold text-[#3D4F3B]">Create Annual Report</h2>
+          <h2 className="text-xl font-bold text-[#4A1A5C]">Create Annual Report</h2>
           <p className="text-sm text-gray-600">Build your comprehensive annual impact report</p>
         </div>
         <button
@@ -152,7 +152,7 @@ export function AnnualReportWizard({ onClose }: WizardProps) {
         {currentStep === 'images' && (
           <div className="max-w-4xl mx-auto">
             <div className="text-center py-20">
-              <h2 className="text-2xl font-bold text-[#3D4F3B] mb-4">Images Step</h2>
+              <h2 className="text-2xl font-bold text-[#4A1A5C] mb-4">Images Step</h2>
               <p className="text-gray-600">Coming soon...</p>
             </div>
           </div>

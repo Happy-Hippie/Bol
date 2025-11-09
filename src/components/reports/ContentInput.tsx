@@ -223,7 +223,7 @@ export function ContentInput({ onNext, onBack, reportData, onUpdate }: ContentIn
   const getStatusBadge = (status: string) => {
     const badges = {
       empty: { bg: 'bg-gray-200', text: 'text-gray-600', label: 'Empty' },
-      draft: { bg: 'bg-[#E6B84D]', text: 'text-white', label: 'Draft' },
+      draft: { bg: 'bg-[#F59E42]', text: 'text-white', label: 'Draft' },
       complete: { bg: 'bg-green-500', text: 'text-white', label: 'Complete' },
     };
     return badges[status as keyof typeof badges];
@@ -241,22 +241,22 @@ export function ContentInput({ onNext, onBack, reportData, onUpdate }: ContentIn
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-2xl font-bold text-[#3D4F3B] mb-2">Content Input</h3>
+          <h3 className="text-2xl font-bold text-[#4A1A5C] mb-2">Content Input</h3>
           <p className="text-gray-600">Add content to each section of your report</p>
         </div>
         <div className="flex items-center gap-4">
-          <span className="text-sm text-[#E6B84D]">Saved {getTimeSince(lastSaved)}</span>
+          <span className="text-sm text-[#F59E42]">Saved {getTimeSince(lastSaved)}</span>
           <div className="flex gap-2">
             <button
               onClick={() => toggleAllSections(false)}
-              className="flex items-center gap-1 px-3 py-1.5 text-sm text-gray-600 hover:text-[#3D4F3B] transition-colors"
+              className="flex items-center gap-1 px-3 py-1.5 text-sm text-gray-600 hover:text-[#4A1A5C] transition-colors"
             >
               <ChevronsRight size={16} />
               Collapse All
             </button>
             <button
               onClick={() => toggleAllSections(true)}
-              className="flex items-center gap-1 px-3 py-1.5 text-sm text-gray-600 hover:text-[#3D4F3B] transition-colors"
+              className="flex items-center gap-1 px-3 py-1.5 text-sm text-gray-600 hover:text-[#4A1A5C] transition-colors"
             >
               <ChevronsDown size={16} />
               Expand All
@@ -280,11 +280,11 @@ export function ContentInput({ onNext, onBack, reportData, onUpdate }: ContentIn
                 <div className="flex items-center gap-3">
                   <GripVertical size={20} className="text-gray-400 cursor-move" />
                   {isExpanded ? (
-                    <ChevronDown size={20} className="text-[#3D4F3B]" />
+                    <ChevronDown size={20} className="text-[#4A1A5C]" />
                   ) : (
                     <ChevronRight size={20} className="text-gray-400" />
                   )}
-                  <h4 className="text-lg font-bold text-[#3D4F3B]">{section.title}</h4>
+                  <h4 className="text-lg font-bold text-[#4A1A5C]">{section.title}</h4>
                 </div>
                 <div className="flex items-center gap-3">
                   <span className={`text-xs px-3 py-1 rounded-full ${badge.bg} ${badge.text}`}>
@@ -311,7 +311,7 @@ export function ContentInput({ onNext, onBack, reportData, onUpdate }: ContentIn
                       {section.projects?.map((project) => (
                         <Card key={project.id} borderColor="blue" className="p-4">
                           <div className="flex justify-between items-start mb-3">
-                            <h5 className="font-bold text-[#3D4F3B]">Project</h5>
+                            <h5 className="font-bold text-[#4A1A5C]">Project</h5>
                             <button
                               onClick={() => deleteProject(section.id, project.id)}
                               className="p-1 hover:bg-red-50 rounded transition-colors"
@@ -326,7 +326,7 @@ export function ContentInput({ onNext, onBack, reportData, onUpdate }: ContentIn
                               onChange={(e) =>
                                 updateProject(section.id, project.id, { name: e.target.value })
                               }
-                              className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:border-[#7B9CA8] focus:outline-none"
+                              className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:border-[#2563A5] focus:outline-none"
                               placeholder="Project name"
                             />
                             <textarea
@@ -334,7 +334,7 @@ export function ContentInput({ onNext, onBack, reportData, onUpdate }: ContentIn
                               onChange={(e) =>
                                 updateProject(section.id, project.id, { description: e.target.value })
                               }
-                              className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:border-[#7B9CA8] focus:outline-none"
+                              className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:border-[#2563A5] focus:outline-none"
                               rows={2}
                               placeholder="Project description"
                             />
@@ -347,7 +347,7 @@ export function ContentInput({ onNext, onBack, reportData, onUpdate }: ContentIn
                                     budget: parseFloat(e.target.value) || 0,
                                   })
                                 }
-                                className="flex-1 px-3 py-2 border border-gray-200 rounded-lg focus:border-[#7B9CA8] focus:outline-none"
+                                className="flex-1 px-3 py-2 border border-gray-200 rounded-lg focus:border-[#2563A5] focus:outline-none"
                                 placeholder="Budget (₹)"
                               />
                               <select
@@ -357,7 +357,7 @@ export function ContentInput({ onNext, onBack, reportData, onUpdate }: ContentIn
                                     status: e.target.value as any,
                                   })
                                 }
-                                className="px-3 py-2 border border-gray-200 rounded-lg focus:border-[#7B9CA8] focus:outline-none"
+                                className="px-3 py-2 border border-gray-200 rounded-lg focus:border-[#2563A5] focus:outline-none"
                               >
                                 <option value="active">Active</option>
                                 <option value="completed">Completed</option>
@@ -366,7 +366,7 @@ export function ContentInput({ onNext, onBack, reportData, onUpdate }: ContentIn
                             </div>
                             {project.budget > 0 && (
                               <p className="text-sm text-gray-600">
-                                Budget: <span className="font-bold text-[#3D4F3B]">{formatCurrency(project.budget)}</span>
+                                Budget: <span className="font-bold text-[#4A1A5C]">{formatCurrency(project.budget)}</span>
                               </p>
                             )}
                           </div>
@@ -375,7 +375,7 @@ export function ContentInput({ onNext, onBack, reportData, onUpdate }: ContentIn
                       <Button
                         variant="outline"
                         onClick={() => addProject(section.id)}
-                        className="w-full border-[#7B9CA8] text-[#7B9CA8] hover:bg-[#7B9CA8]/5"
+                        className="w-full border-[#2563A5] text-[#2563A5] hover:bg-[#2563A5]/5"
                       >
                         <Plus size={16} className="mr-2" />
                         Add Project
@@ -388,8 +388,8 @@ export function ContentInput({ onNext, onBack, reportData, onUpdate }: ContentIn
                       onClick={() => setTabForSection(section.id, 'text')}
                       className={`px-4 py-2 font-medium transition-colors ${
                         currentTab === 'text'
-                          ? 'text-[#3D4F3B] border-b-2 border-[#C85F3D]'
-                          : 'text-gray-500 hover:text-[#3D4F3B]'
+                          ? 'text-[#4A1A5C] border-b-2 border-[#D946A6]'
+                          : 'text-gray-500 hover:text-[#4A1A5C]'
                       }`}
                     >
                       Text
@@ -398,8 +398,8 @@ export function ContentInput({ onNext, onBack, reportData, onUpdate }: ContentIn
                       onClick={() => setTabForSection(section.id, 'voice')}
                       className={`px-4 py-2 font-medium transition-colors ${
                         currentTab === 'voice'
-                          ? 'text-[#3D4F3B] border-b-2 border-[#C85F3D]'
-                          : 'text-gray-500 hover:text-[#3D4F3B]'
+                          ? 'text-[#4A1A5C] border-b-2 border-[#D946A6]'
+                          : 'text-gray-500 hover:text-[#4A1A5C]'
                       }`}
                     >
                       Voice
@@ -408,8 +408,8 @@ export function ContentInput({ onNext, onBack, reportData, onUpdate }: ContentIn
                       onClick={() => setTabForSection(section.id, 'upload')}
                       className={`px-4 py-2 font-medium transition-colors ${
                         currentTab === 'upload'
-                          ? 'text-[#3D4F3B] border-b-2 border-[#C85F3D]'
-                          : 'text-gray-500 hover:text-[#3D4F3B]'
+                          ? 'text-[#4A1A5C] border-b-2 border-[#D946A6]'
+                          : 'text-gray-500 hover:text-[#4A1A5C]'
                       }`}
                     >
                       Upload
@@ -422,7 +422,7 @@ export function ContentInput({ onNext, onBack, reportData, onUpdate }: ContentIn
                         <button
                           onClick={() => handleAIExpand(section.id)}
                           disabled={isProcessing === section.id || !section.content}
-                          className="flex items-center gap-2 px-4 py-2 bg-[#7B9CA8] text-white rounded-lg hover:bg-[#7B9CA8]/90 transition-all disabled:opacity-50"
+                          className="flex items-center gap-2 px-4 py-2 bg-[#2563A5] text-white rounded-lg hover:bg-[#2563A5]/90 transition-all disabled:opacity-50"
                         >
                           <Sparkles size={16} />
                           {isProcessing === section.id ? 'Expanding...' : 'AI Expand'}
@@ -431,7 +431,7 @@ export function ContentInput({ onNext, onBack, reportData, onUpdate }: ContentIn
                       <textarea
                         value={section.content}
                         onChange={(e) => updateSectionContent(section.id, e.target.value)}
-                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-[#3D4F3B] focus:outline-none resize-none"
+                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-[#4A1A5C] focus:outline-none resize-none"
                         rows={8}
                         placeholder="Start typing your content here..."
                       />
@@ -446,8 +446,8 @@ export function ContentInput({ onNext, onBack, reportData, onUpdate }: ContentIn
                           onClick={() => handleVoiceInput(section.id)}
                           className={`w-20 h-20 rounded-full flex items-center justify-center mb-4 transition-all ${
                             isRecording === section.id
-                              ? 'bg-gradient-to-br from-[#C85F3D] to-[#E6B84D] animate-pulse'
-                              : 'bg-gradient-to-br from-[#C85F3D] to-[#E6B84D] hover:opacity-90'
+                              ? 'bg-gradient-to-br from-[#D946A6] to-[#F59E42] animate-pulse'
+                              : 'bg-gradient-to-br from-[#D946A6] to-[#F59E42] hover:opacity-90'
                           }`}
                         >
                           <Mic size={32} className="text-white" />
@@ -457,7 +457,7 @@ export function ContentInput({ onNext, onBack, reportData, onUpdate }: ContentIn
                             {[...Array(5)].map((_, i) => (
                               <div
                                 key={i}
-                                className="w-1 bg-[#C85F3D] rounded-full animate-pulse"
+                                className="w-1 bg-[#D946A6] rounded-full animate-pulse"
                                 style={{
                                   height: `${Math.random() * 30 + 10}px`,
                                   animationDelay: `${i * 0.1}s`,
@@ -471,7 +471,7 @@ export function ContentInput({ onNext, onBack, reportData, onUpdate }: ContentIn
                         </p>
                       </div>
                       <div className="border-t border-gray-200 pt-4">
-                        <label className="block text-sm font-medium text-[#3D4F3B] mb-2">
+                        <label className="block text-sm font-medium text-[#4A1A5C] mb-2">
                           Or upload audio file
                         </label>
                         <input
@@ -482,7 +482,7 @@ export function ContentInput({ onNext, onBack, reportData, onUpdate }: ContentIn
                       </div>
                       {section.content && (
                         <div className="bg-gray-50 p-4 rounded-lg">
-                          <p className="text-sm font-medium text-[#3D4F3B] mb-2">Transcribed Text:</p>
+                          <p className="text-sm font-medium text-[#4A1A5C] mb-2">Transcribed Text:</p>
                           <p className="text-sm text-gray-700 whitespace-pre-wrap">{section.content}</p>
                         </div>
                       )}
@@ -493,17 +493,17 @@ export function ContentInput({ onNext, onBack, reportData, onUpdate }: ContentIn
                     <div className="space-y-4">
                       <div
                         onClick={() => handleFileUpload(section.id)}
-                        className="border-2 border-dashed border-gray-300 rounded-lg p-12 text-center cursor-pointer hover:border-[#7B9CA8] hover:bg-[#7B9CA8]/5 transition-colors"
+                        className="border-2 border-dashed border-gray-300 rounded-lg p-12 text-center cursor-pointer hover:border-[#2563A5] hover:bg-[#2563A5]/5 transition-colors"
                       >
                         <Upload size={48} className="mx-auto mb-4 text-gray-400" />
-                        <p className="text-[#3D4F3B] font-medium mb-2">
+                        <p className="text-[#4A1A5C] font-medium mb-2">
                           Drop files here or click to browse
                         </p>
                         <p className="text-sm text-gray-500">Supports PDF and Word documents</p>
                       </div>
                       {section.content && (
                         <div className="bg-gray-50 p-4 rounded-lg">
-                          <p className="text-sm font-medium text-[#3D4F3B] mb-2">Extracted Content:</p>
+                          <p className="text-sm font-medium text-[#4A1A5C] mb-2">Extracted Content:</p>
                           <p className="text-sm text-gray-700 whitespace-pre-wrap">{section.content}</p>
                         </div>
                       )}
@@ -519,7 +519,7 @@ export function ContentInput({ onNext, onBack, reportData, onUpdate }: ContentIn
       <Button
         variant="outline"
         onClick={addCustomSection}
-        className="w-full border-2 border-[#C85F3D] text-[#C85F3D] hover:bg-[#C85F3D]/5 py-3 font-medium"
+        className="w-full border-2 border-[#D946A6] text-[#D946A6] hover:bg-[#D946A6]/5 py-3 font-medium"
       >
         <Plus size={20} className="mr-2" />
         Add Custom Section
@@ -536,7 +536,7 @@ export function ContentInput({ onNext, onBack, reportData, onUpdate }: ContentIn
           </Button>
           <Button
             variant="secondary"
-            className="border-[#7B9CA8] text-[#7B9CA8] hover:bg-[#7B9CA8]/5"
+            className="border-[#2563A5] text-[#2563A5] hover:bg-[#2563A5]/5"
           >
             <Save size={16} className="mr-2" />
             Save Draft
@@ -545,7 +545,7 @@ export function ContentInput({ onNext, onBack, reportData, onUpdate }: ContentIn
         <Button
           variant="gradient"
           onClick={onNext}
-          className="bg-gradient-to-br from-[#C85F3D] to-[#E6B84D] text-white px-8 py-3 text-lg"
+          className="bg-gradient-to-br from-[#D946A6] to-[#F59E42] text-white px-8 py-3 text-lg"
         >
           Next: Select Images
         </Button>

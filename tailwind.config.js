@@ -4,23 +4,18 @@ export default {
   theme: {
     extend: {
       colors: {
-        'bol-purple': '#5C7A58',
-        'bol-pink': '#C85F3D',
-        'bol-blue': '#7B9CA8',
-        'bol-orange': '#E6B84D',
-        'bol-dark': '#3D4F3B',
-        'bol-light': '#F5F7F5',
-        'bol-sage': '#7A9B76',
-        'bol-terracotta': '#C85F3D',
-        'bol-gold': '#E6B84D',
-        'bol-mint': '#C5D8C5',
-        'bol-slate': '#7B9CA8',
+        'bol-purple': '#4A1A5C',
+        'bol-pink': '#D946A6',
+        'bol-blue': '#2563A5',
+        'bol-orange': '#F59E42',
+        'bol-dark': '#2D1B3D',
+        'bol-light': '#F8F9FA',
       },
       backgroundImage: {
-        'gradient-pink-orange': 'linear-gradient(135deg, #C85F3D 0%, #E6B84D 100%)',
-        'gradient-orange-pink': 'linear-gradient(135deg, #E6B84D 0%, #C85F3D 100%)',
-        'gradient-blue-purple': 'linear-gradient(135deg, #7B9CA8 0%, #5C7A58 100%)',
-        'gradient-purple-blue': 'linear-gradient(135deg, #5C7A58 0%, #7B9CA8 100%)',
+        'gradient-pink-orange': 'linear-gradient(135deg, #D946A6 0%, #F59E42 100%)',
+        'gradient-orange-pink': 'linear-gradient(135deg, #F59E42 0%, #FF6B9D 100%)',
+        'gradient-blue-purple': 'linear-gradient(135deg, #2563A5 0%, #4A1A5C 100%)',
+        'gradient-purple-blue': 'linear-gradient(135deg, #4A1A5C 0%, #2563A5 100%)',
       },
       animation: {
         'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',

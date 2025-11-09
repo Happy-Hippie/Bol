@@ -28,12 +28,12 @@ interface Category {
 }
 
 const categories: Category[] = [
-  { id: 'sdg', name: 'SDG Documents', icon: Target, color: '#7B9CA8', helperText: 'SDG alignment' },
-  { id: 'human-rights', name: 'Human Rights Frameworks', icon: Shield, color: '#C85F3D', helperText: 'human rights' },
-  { id: 'protocols', name: 'Protocols & Guidelines', icon: FileText, color: '#3D4F3B', helperText: 'protocols and guidelines' },
-  { id: 'sector', name: 'Sector-Specific Documentation', icon: Building2, color: '#E6B84D', helperText: 'sector-specific' },
-  { id: 'grant', name: 'Grant-Based Requirements', icon: DollarSign, color: '#7B9CA8', helperText: 'grant requirements' },
-  { id: 'organizational', name: 'Organisational Policies', icon: Book, color: '#3D4F3B', helperText: 'organizational policies' },
+  { id: 'sdg', name: 'SDG Documents', icon: Target, color: '#2563A5', helperText: 'SDG alignment' },
+  { id: 'human-rights', name: 'Human Rights Frameworks', icon: Shield, color: '#D946A6', helperText: 'human rights' },
+  { id: 'protocols', name: 'Protocols & Guidelines', icon: FileText, color: '#4A1A5C', helperText: 'protocols and guidelines' },
+  { id: 'sector', name: 'Sector-Specific Documentation', icon: Building2, color: '#F59E42', helperText: 'sector-specific' },
+  { id: 'grant', name: 'Grant-Based Requirements', icon: DollarSign, color: '#2563A5', helperText: 'grant requirements' },
+  { id: 'organizational', name: 'Organisational Policies', icon: Book, color: '#4A1A5C', helperText: 'organizational policies' },
   { id: 'other', name: 'Other Frameworks', icon: Folder, color: '#6B7280', helperText: 'other frameworks' },
 ];
 

@@ -101,17 +101,17 @@ export function AnnualReportSetup({ onNext, onSaveDraft, initialData }: AnnualRe
       <div className="mb-8">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-3xl font-bold text-[#4A1A5C] mb-2">Annual Report Setup</h1>
+            <h1 className="text-3xl font-bold text-[#3D4F3B] mb-2">Annual Report Setup</h1>
             <p className="text-gray-600">Step 1 of 5</p>
           </div>
         </div>
 
         <div className="flex items-center gap-2">
           <div className="flex items-center">
-            <div className="w-10 h-10 rounded-full bg-[#D946A6] text-white flex items-center justify-center font-bold">
+            <div className="w-10 h-10 rounded-full bg-[#C85F3D] text-white flex items-center justify-center font-bold">
               1
             </div>
-            <div className="ml-2 text-sm font-medium text-[#D946A6]">Setup</div>
+            <div className="ml-2 text-sm font-medium text-[#C85F3D]">Setup</div>
           </div>
           <div className="w-16 h-1 bg-gray-200" />
           <div className="flex items-center">
@@ -147,7 +147,7 @@ export function AnnualReportSetup({ onNext, onSaveDraft, initialData }: AnnualRe
       <Card>
         <div className="space-y-6">
           <div>
-            <label className="block text-[#4A1A5C] font-bold mb-2 flex items-center gap-2">
+            <label className="block text-[#3D4F3B] font-bold mb-2 flex items-center gap-2">
               <FileText size={20} />
               Report Title *
             </label>
@@ -155,14 +155,14 @@ export function AnnualReportSetup({ onNext, onSaveDraft, initialData }: AnnualRe
               type="text"
               value={formData.title}
               onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-[#D946A6] focus:outline-none transition-colors"
+              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-[#C85F3D] focus:outline-none transition-colors"
               placeholder="e.g., Annual Impact Report 2024"
               required
             />
           </div>
 
           <div>
-            <label className="block text-[#4A1A5C] font-bold mb-3 flex items-center gap-2">
+            <label className="block text-[#3D4F3B] font-bold mb-3 flex items-center gap-2">
               <Calendar size={20} />
               Report Period *
             </label>
@@ -171,7 +171,7 @@ export function AnnualReportSetup({ onNext, onSaveDraft, initialData }: AnnualRe
                 onClick={() => setFormData({ ...formData, periodType: 'dates' })}
                 className={`flex-1 px-4 py-2 rounded-lg font-medium transition-colors ${
                   formData.periodType === 'dates'
-                    ? 'bg-[#D946A6] text-white'
+                    ? 'bg-[#C85F3D] text-white'
                     : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                 }`}
               >
@@ -181,7 +181,7 @@ export function AnnualReportSetup({ onNext, onSaveDraft, initialData }: AnnualRe
                 onClick={() => setFormData({ ...formData, periodType: 'financial' })}
                 className={`flex-1 px-4 py-2 rounded-lg font-medium transition-colors ${
                   formData.periodType === 'financial'
-                    ? 'bg-[#D946A6] text-white'
+                    ? 'bg-[#C85F3D] text-white'
                     : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                 }`}
               >
@@ -204,7 +204,7 @@ export function AnnualReportSetup({ onNext, onSaveDraft, initialData }: AnnualRe
                         startDate: formatDateForDisplay(e.target.value),
                       })
                     }
-                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-[#2563A5] focus:outline-none transition-colors"
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-[#7B9CA8] focus:outline-none transition-colors"
                   />
                 </div>
                 <div>
@@ -220,7 +220,7 @@ export function AnnualReportSetup({ onNext, onSaveDraft, initialData }: AnnualRe
                         endDate: formatDateForDisplay(e.target.value),
                       })
                     }
-                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-[#2563A5] focus:outline-none transition-colors"
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-[#7B9CA8] focus:outline-none transition-colors"
                   />
                 </div>
               </div>
@@ -230,7 +230,7 @@ export function AnnualReportSetup({ onNext, onSaveDraft, initialData }: AnnualRe
                 onChange={(e) =>
                   setFormData({ ...formData, financialYear: e.target.value })
                 }
-                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-[#2563A5] focus:outline-none transition-colors"
+                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-[#7B9CA8] focus:outline-none transition-colors"
               >
                 {financialYears.map((fy) => (
                   <option key={fy} value={fy}>
@@ -242,7 +242,7 @@ export function AnnualReportSetup({ onNext, onSaveDraft, initialData }: AnnualRe
           </div>
 
           <div>
-            <label className="block text-[#4A1A5C] font-bold mb-3 flex items-center gap-2">
+            <label className="block text-[#3D4F3B] font-bold mb-3 flex items-center gap-2">
               <Globe size={20} />
               Report Language
             </label>
@@ -256,7 +256,7 @@ export function AnnualReportSetup({ onNext, onSaveDraft, initialData }: AnnualRe
                   onChange={(e) =>
                     setFormData({ ...formData, language: e.target.value as any })
                   }
-                  className="w-5 h-5 text-[#D946A6] focus:ring-[#D946A6]"
+                  className="w-5 h-5 text-[#C85F3D] focus:ring-[#C85F3D]"
                 />
                 <span className="text-gray-700 font-medium">English</span>
               </label>
@@ -269,7 +269,7 @@ export function AnnualReportSetup({ onNext, onSaveDraft, initialData }: AnnualRe
                   onChange={(e) =>
                     setFormData({ ...formData, language: e.target.value as any })
                   }
-                  className="w-5 h-5 text-[#D946A6] focus:ring-[#D946A6]"
+                  className="w-5 h-5 text-[#C85F3D] focus:ring-[#C85F3D]"
                 />
                 <span className="text-gray-700 font-medium">Hindi</span>
               </label>
@@ -282,7 +282,7 @@ export function AnnualReportSetup({ onNext, onSaveDraft, initialData }: AnnualRe
                   onChange={(e) =>
                     setFormData({ ...formData, language: e.target.value as any })
                   }
-                  className="w-5 h-5 text-[#D946A6] focus:ring-[#D946A6]"
+                  className="w-5 h-5 text-[#C85F3D] focus:ring-[#C85F3D]"
                 />
                 <span className="text-gray-700 font-medium">Both</span>
               </label>
@@ -290,7 +290,7 @@ export function AnnualReportSetup({ onNext, onSaveDraft, initialData }: AnnualRe
           </div>
 
           <div>
-            <label className="block text-[#4A1A5C] font-bold mb-3">
+            <label className="block text-[#3D4F3B] font-bold mb-3">
               Template Selection
             </label>
             <div className="grid grid-cols-3 gap-4">
@@ -300,7 +300,7 @@ export function AnnualReportSetup({ onNext, onSaveDraft, initialData }: AnnualRe
                   borderColor={formData.template === template.id ? 'pink' : 'none'}
                   className={`cursor-pointer transition-all duration-200 ${
                     formData.template === template.id
-                      ? 'ring-2 ring-[#D946A6] bg-gradient-to-br from-[#D946A6]/5 to-[#F59E42]/5'
+                      ? 'ring-2 ring-[#C85F3D] bg-gradient-to-br from-[#C85F3D]/5 to-[#E6B84D]/5'
                       : 'hover:scale-105'
                   }`}
                   onClick={() => setFormData({ ...formData, template: template.id as any })}
@@ -315,7 +315,7 @@ export function AnnualReportSetup({ onNext, onSaveDraft, initialData }: AnnualRe
                         <FileText size={48} className="text-gray-400" />
                       )}
                     </div>
-                    <h4 className="font-bold text-[#4A1A5C] mb-1">{template.name}</h4>
+                    <h4 className="font-bold text-[#3D4F3B] mb-1">{template.name}</h4>
                     <p className="text-xs text-gray-600">{template.description}</p>
                   </div>
                 </Card>
@@ -329,7 +329,7 @@ export function AnnualReportSetup({ onNext, onSaveDraft, initialData }: AnnualRe
         <Button
           variant="secondary"
           onClick={handleSaveDraft}
-          className="border-[#2563A5] text-[#2563A5] hover:bg-[#2563A5]/5"
+          className="border-[#7B9CA8] text-[#7B9CA8] hover:bg-[#7B9CA8]/5"
         >
           <Save size={16} className="mr-2" />
           Save Draft
@@ -338,7 +338,7 @@ export function AnnualReportSetup({ onNext, onSaveDraft, initialData }: AnnualRe
           variant="gradient"
           onClick={handleNext}
           disabled={!isFormValid()}
-          className="bg-gradient-to-br from-[#D946A6] to-[#F59E42] text-white px-8 py-3"
+          className="bg-gradient-to-br from-[#C85F3D] to-[#E6B84D] text-white px-8 py-3"
         >
           Next: Add Content
           <ArrowRight size={20} className="ml-2" />

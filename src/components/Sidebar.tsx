@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Home, Building2, FileText, Settings, LogOut, Bot, ChevronDown, ChevronUp, Info, FolderOpen, BookOpen, Compass, Image } from 'lucide-react';
+import { Home, Building2, FileText, Settings, LogOut, Bot, ChevronDown, ChevronUp, Info, FolderOpen, BookOpen, Compass, Image, Zap } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 interface SidebarProps {
@@ -63,12 +63,11 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
   return (
     <div className="w-64 bg-gradient-to-b from-bol-purple via-bol-purple to-bol-purple/95 h-screen fixed left-0 top-0 flex flex-col overflow-y-auto shadow-2xl">
       <div className="p-6 bg-white">
-        <div className="mb-2 flex justify-center">
-          <img
-            src="/Bol logo (1).png"
-            alt="BOL Logo"
-            className="h-16 w-auto"
-          />
+        <div className="mb-2 flex justify-center items-center gap-2">
+          <div className="bg-gradient-to-br from-bol-purple to-bol-blue rounded-xl p-2 shadow-lg">
+            <Zap size={32} className="text-white" strokeWidth={2.5} />
+          </div>
+          <h1 className="text-2xl font-bold text-bol-purple">BOL</h1>
         </div>
         <p className="text-bol-purple text-center text-sm font-semibold tracking-wide">Communications Simplified.</p>
       </div>

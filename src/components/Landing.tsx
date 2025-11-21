@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Loader2, Zap } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { Button } from './Button';
 
@@ -40,12 +40,13 @@ export function Landing() {
     <div className="min-h-screen bg-white flex items-center justify-center p-4">
       <div className="max-w-md w-full">
         <div className="text-center mb-6">
-          <div className="mb-3 flex justify-center items-center gap-2">
-            <div className="bg-gradient-to-br from-bol-purple to-bol-blue rounded-2xl p-4 shadow-xl">
-              <Zap size={64} className="text-white" strokeWidth={2.5} />
-            </div>
+          <div className="mb-3 flex justify-center">
+            <img
+              src="/Bol logo.png"
+              alt="BOL Logo"
+              className="h-32 w-auto"
+            />
           </div>
-          <h1 className="text-4xl font-bold text-bol-purple mb-2">BOL</h1>
           <p className="text-gray-800 text-xl">Communications CRM for NGOs</p>
           <p className="text-gray-600 mt-2">Empowering your impact through better communication</p>
         </div>
